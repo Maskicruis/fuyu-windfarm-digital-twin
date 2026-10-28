@@ -1,0 +1,53 @@
+{
+  "frontend": "G:\\中车扶余数字孪生\\00工作区\\扶余一号_UI展示与控制后台_V9\\frontend.html",
+  "backend": "G:\\中车扶余数字孪生\\00工作区\\扶余一号_UI展示与控制后台_V9\\admin.html",
+  "archive": "G:\\中车扶余数字孪生\\00工作区\\扶余一号_UI展示前端与控制后台_V9_完整交付.zip",
+  "archive_bytes": 1693087,
+  "files": 32,
+  "frontend_sha256": "e87c19e2e4d0f9591f8dc44e6a7bdbe706e6dfeea57aee46a89a0c565231ccbb",
+  "server_test_groups": 15,
+  "admin_dom_test": {
+    "passed": true,
+    "tests": 5,
+    "assertions": 32,
+    "environment": "Node.js + jsdom DOM simulation; no browser/pixel QA",
+    "results": [
+      {
+        "name": "secure handshake, concise component tree and cross-node text search",
+        "passed": true
+      },
+      {
+        "name": "viewport and parent-local geometry send normalized values with free positioning",
+        "passed": true
+      },
+      {
+        "name": "text, nested content, object data and style updates use the documented bridge",
+        "passed": true
+      },
+      {
+        "name": "JSON import accepts new geometry/data ranges and rejects unsafe style payloads",
+        "passed": true
+      },
+      {
+        "name": "history, offline display export and online draft publication remain distinct",
+        "passed": true
+      }
+    ]
+  },
+  "browser_verified": [
+    "edit/reset text",
+    "SVG text edit/reset",
+    "independent section drag",
+    "independent section resize",
+    "object progress bars and delta",
+    "publish/read-only frontend",
+    "offline HTML export and reopened edited title, zero editor controls"
+  ],
+  "screenshots": [
+    "效果图\\01_控制后台_独立图窗布局.jpg",
+    "效果图\\02_控制后台_内部文字编辑.jpg",
+    "效果图\\03_纯展示前端_升压站.jpg",
+    "效果图\\04_纯展示前端_图窗迁移后.jpg"
+  ],
+  "temporary_dependency_cleanup": "blocked by automatic approval; excluded from package"
+}

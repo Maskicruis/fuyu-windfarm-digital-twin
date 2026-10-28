@@ -1,0 +1,26 @@
+# Local operational data, imported originals, parsed text, conversations and secrets.
+/data/
+*.key
+*.pem
+.env
+.env.*
+!.env.example
+*.sqlite*
+*.db*
+*.log
+*.pid
+*.zip
+__pycache__/
+*.py[cod]
+node_modules/
+.venv/
+venv/
+/开发源码/验收产物/
+/开发源码/reference/
+/开发源码/*-test-report.json
+/开发源码/admin-tests/admin-test-report.json
+/开发源码/admin-static-check.json
+/效果图/
+/V9.1_交付验证记录.json
+/V9.2_交付验证记录.json
+/V10.0_交付验证记录.json

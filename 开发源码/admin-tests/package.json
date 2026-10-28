@@ -1,0 +1,1 @@
+{"name":"fuyu-v9-admin-dom-tests","private":true,"version":"1.0.0","scripts":{"test":"node admin.test.cjs"},"devDependencies":{"jsdom":"30.1.3"}}
