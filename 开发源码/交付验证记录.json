@@ -4,7 +4,12 @@
     "passed": true,
     "version": "12.0",
     "binary_asset_equals_source": true,
-    "sha256": "b48639117af6dd9fc6433ea536e7428432232fdf7fd9d575427d963efc44225d"
+    "export_rehydration_guard": true,
+    "sha256": "d4966444f08e4f25d1294992aa5e5c8a3b858aa9b798f8c2b39da0d22814d10d",
+    "backend_tests": 142,
+    "live_ui": "drag and text editing verified",
+    "export": "required initializer DOM survives standalone export",
+    "data_backup": "统一工作台升级前数据_20261029.zip"
   },
   "specflow": {
     "passed": true,

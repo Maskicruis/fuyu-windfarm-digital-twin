@@ -25,4 +25,10 @@ w.document.querySelector('[data-uw-knowledge="process"]').click();assert.equal(a
 w.document.querySelector('[data-uw-knowledge="danger"]').click();assert.match(modal,/危大工程/);assert.equal(w.unitState.task,'overview');
 w.document.querySelector('[data-uw-document="a"]').click();assert.equal(modal,'预览a');
 w.unitState.playing=true;w.renderUnitWorkspace();assert.equal(animation,true);assert.ok(w.document.querySelector('[data-u-action="play"]').textContent.includes('暂停'));
+// Export must rehydrate the base initializer even after unified toolbar removes its design button.
+w.document.title='Export fixture';const header=w.document.createElement('header');header.className='topbar';header.innerHTML='<div class="top-actions"></div>';w.document.body.prepend(header);
+const preset=w.document.createElement('script');preset.id='fuyu-display-config';w.document.head.append(preset);
+w.eval('var config={version:2,profiles:{}};var nodes=new Map(),textOriginals=new Map(),attrOriginals=new Map(),styleOriginals=new Map();');
+const runtime=fs.readFileSync(path.join(__dirname,'runtime.js'),'utf8');w.eval(runtime.slice(runtime.indexOf('function cleanExport()'),runtime.indexOf('async function loadPublished()')));
+const exported=new JSDOM(w.cleanExport());assert.ok(exported.window.document.getElementById('design-button'));assert.ok(exported.window.document.getElementById('design-button').hidden);exported.window.close();
 dom.window.close();console.log('Unified workspace: four disciplines, single page, scoped archives, escaping, knowledge actions and playback passed.');
