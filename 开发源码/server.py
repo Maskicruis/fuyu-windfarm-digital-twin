@@ -19,16 +19,18 @@ import re
 import sys
 import select
 import socket
+import shutil
 import tempfile
 import threading
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, quote, unquote, urlsplit
 
-from deepseek_service import DeepSeekError, DeepSeekService
+from deepseek_service import DeepSeekError, DeepSeekService, GENERIC_SYSTEM_PROMPT
 from knowledge_service import KnowledgeStore, KnowledgeError
 from agent_service import AgentService
 from data_interfaces import InterfaceStore, InterfaceError
+from twin_plugin import PluginAdapter, PREFIX as PLUGIN_PREFIX, validate_context
 
 MAX_BODY = 2 * 1024 * 1024
 MAX_VERSIONS = 30
@@ -585,14 +587,28 @@ class FuyuServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 
-    def __init__(self, address, root, *, persistent_credentials=True):
+    def __init__(self, address, root, *, persistent_credentials=True, data_root=None, plugin_only=False,
+                 allowed_origins=None, plugin_token=None):
         self.root = Path(root).resolve()
-        self.store = Store(self.root)
-        self.documents = DocumentStore(self.root)
-        self.deepseek = DeepSeekService(self.root, account_store=persistent_credentials)
-        self.knowledge = KnowledgeStore(self.root)
-        self.agent = AgentService(self.root, self.knowledge, self.deepseek)
-        self.interfaces = InterfaceStore(self.root)
+        self.workspace = Path(data_root).resolve() if data_root is not None else self.root
+        self.workspace.mkdir(parents=True, exist_ok=True)
+        self.plugin_only = plugin_only
+        if not plugin_only:
+            for name in ('default-ui.json', 'object-catalog.json'):
+                source = self.root / 'config' / name
+                target = self.workspace / 'config' / name
+                if source.is_file() and not target.exists():
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(source, target)
+        self.store = None if plugin_only else Store(self.workspace)
+        self.documents = None if plugin_only else DocumentStore(self.workspace)
+        self.deepseek = DeepSeekService(self.workspace, account_store=persistent_credentials)
+        if plugin_only:
+            self.deepseek.system_prompt = GENERIC_SYSTEM_PROMPT
+        self.knowledge = KnowledgeStore(self.workspace)
+        self.agent = AgentService(self.workspace, self.knowledge, self.deepseek)
+        self.interfaces = None if plugin_only else InterfaceStore(self.workspace)
+        self.plugin = PluginAdapter(self.workspace, allowed_origins=allowed_origins, token=plugin_token)
         super().__init__(address, Handler)
 
 
@@ -602,10 +618,71 @@ class FuyuServer(ThreadingHTTPServer):
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "FuyuLocal/10.1"
+    server_version = "FuyuLocal/11.0"
     sys_version = ""
 
+    def end_headers(self):
+        for name, value in getattr(self, '_plugin_cors', {}).items():
+            self.send_header(name, value)
+        super().end_headers()
+
+    def _plugin_route(self, method, head=False):
+        original = self.path
+        path = urlsplit(original).path
+        if not path.startswith(PLUGIN_PREFIX + '/'):
+            if self.server.plugin_only and path.startswith('/api/') and path not in ('/api/system/status', '/api/health'):
+                self._error(404, '独立组件仅开放 /api/plugin/v1 接口')
+                return True
+            return False
+        host = self._host()
+        if host is None:
+            return True
+        adapter = self.server.plugin
+        origins = self.headers.get_all('Origin', [])
+        if len(origins) > 1:
+            self._error(403, 'Origin 无效')
+            return True
+        origin = origins[0] if origins else None
+        try:
+            self._plugin_cors = adapter.cors_headers(origin)
+            if path == PLUGIN_PREFIX + '/manifest' and method in ('GET', 'HEAD'):
+                self._reply(200, adapter.manifest(), head=head)
+                return True
+            if method == 'OPTIONS':
+                if not self._plugin_cors:
+                    raise DeepSeekError('组件未授权此宿主来源。', 403)
+                self.send_response(204)
+                self.send_header('Content-Length', '0')
+                self.end_headers()
+                return True
+            configure = method not in ('GET', 'HEAD') and path in (
+                PLUGIN_PREFIX+'/settings', PLUGIN_PREFIX+'/settings/test', PLUGIN_PREFIX+'/knowledge/settings')
+            local = 'http://' + self.headers['Host']
+            adapter.authorize(origin, self.headers.get('Authorization'), local, configure=configure,
+                              same_origin_browser=not origin and self.headers.get('Sec-Fetch-Site') == 'same-origin')
+            self._plugin_original = original
+            if path == PLUGIN_PREFIX + '/context/validate' and method == 'POST':
+                body = self._body()
+                if body is not None:
+                    self._reply(200, {'context': validate_context(body)})
+                return True
+            target = adapter.rewrite_path(original)
+            if target is None:
+                self._error(404, '组件接口不存在')
+                return True
+            self.path = target
+            return False
+        except (DeepSeekError, ValidationError, ValueError) as error:
+            self._error(getattr(error, 'status', 400), str(error))
+            return True
+
+    def do_OPTIONS(self):
+        if not self._plugin_route('OPTIONS'):
+            self._error(405, '接口不支持预检')
+
     def _reply(self, status, value, *, head=False):
+        if getattr(self, '_plugin_original', None):
+            value = self.server.plugin.public_response(value)
         raw = json.dumps(value, ensure_ascii=False, allow_nan=False).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -674,7 +751,8 @@ class Handler(BaseHTTPRequestHandler):
         value = parse_json(raw)
         if value is None:
             raise ValidationError("请求内容必须是 JSON 对象")
-        return value
+        original = getattr(self, '_plugin_original', None)
+        return self.server.plugin.normalize_body(original, value) if original else value
 
     def _query(self, allowed):
         try:
@@ -781,20 +859,25 @@ class Handler(BaseHTTPRequestHandler):
         self._get()
 
     def _get(self, head=False):
+        if self._plugin_route('HEAD' if head else 'GET', head=head):
+            return
         if self._host() is None:
             return
         try:
             path = urlsplit(self.path).path
-            if path == "/api/state":
+            if path == "/api/health":
+                self._reply(200, {"service":{"name":"fuyu-ui-studio", "revision":"11.0",
+                    "workspace":str(self.server.workspace), "mode":"plugin" if self.server.plugin_only else "application"}}, head=head)
+            elif path == "/api/state":
                 state = self.server.store.state()
-                state["service"] = {"name": "fuyu-ui-studio", "revision": "10.1", "workspace": str(self.server.root.resolve())}
+                state["service"] = {"name": "fuyu-ui-studio", "revision": "11.0", "workspace": str(self.server.workspace)}
                 self._reply(200, state, head=head)
             elif path == "/api/published":
                 self._reply(200, self.server.store.state()["published"], head=head)
             elif path == "/api/settings":
                 self._reply(200, self.server.deepseek.get(), head=head)
             elif path == "/api/system/status":
-                self._reply(200, {"revision":"10.1","mode":"local","knowledge":self.server.knowledge.status(),"interfaces":len(self.server.interfaces.list()["interfaces"])}, head=head)
+                self._reply(200, {"revision":"11.0","mode":"plugin" if self.server.plugin_only else "local","workspace":str(self.server.workspace),"knowledge":self.server.knowledge.status(),"interfaces":len(self.server.interfaces.list()["interfaces"]) if self.server.interfaces else 0}, head=head)
             elif path == "/api/agent/conversations":
                 self._reply(200, self.server.agent.list(), head=head)
             elif re.fullmatch(r"/api/agent/conversations/[a-f0-9]{32}", path):
@@ -844,6 +927,8 @@ class Handler(BaseHTTPRequestHandler):
             nonlocal disconnected
             if cancelled():raise ConnectionAbortedError()
             try:
+                if getattr(self, '_plugin_original', None):
+                    event = self.server.plugin.public_response(event)
                 raw=("data: "+json.dumps(event,ensure_ascii=False,allow_nan=False)+"\n\n").encode('utf-8')
                 self.wfile.write(raw);self.wfile.flush()
             except (OSError,ValueError):
@@ -934,7 +1019,7 @@ class Handler(BaseHTTPRequestHandler):
                     if value.get("rejectedRows") or value.get("warnings") or not value.get("preview"):raise InterfaceError("接口预览包含警告或没有有效对象，请修正映射后重试。",422)
                     config=self.server.store.state()["draft"]
                     config.setdefault("data",{}).setdefault("objects",{})
-                    catalog_path=self.server.root/'config/object-catalog.json'
+                    catalog_path=self.server.workspace/'config/object-catalog.json'
                     if catalog_path.exists():
                         catalog=parse_json(catalog_path.read_bytes())
                         unknown=[row['objectId'] for row in value['preview'] if row['objectId'] not in catalog.get(value['unit'],[])]
@@ -982,7 +1067,10 @@ class Handler(BaseHTTPRequestHandler):
                 or any(p.startswith(".") for p in parts if p)):
             self._error(403, "文件路径不可访问")
             return
-        relative = decoded.lstrip("/") or "frontend.html"
+        relative = decoded.lstrip("/") or ("plugin/widget.html" if self.server.plugin_only else "frontend.html")
+        if self.server.plugin_only and not relative.startswith(('plugin/', 'lib/')):
+            self._error(404, "独立组件不提供风场界面")
+            return
         target = (self.server.root / relative).resolve()
         if not target.is_relative_to(self.server.root):
             self._error(403, "文件路径不可访问")
@@ -1022,7 +1110,9 @@ class Handler(BaseHTTPRequestHandler):
             self._error(405, "未提供资料删除操作，可通过归档状态进行可逆管理")
 
     def _mutate(self, method):
-        if not self._mutating():
+        if self._plugin_route(method):
+            return
+        if not getattr(self, '_plugin_original', None) and not self._mutating():
             return
         try:
             path = urlsplit(self.path).path

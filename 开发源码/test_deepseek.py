@@ -85,8 +85,8 @@ class SettingsAndChatTests(unittest.TestCase):
         self.assertFalse(self.vault.value)
 
     def test_strict_settings_and_endpoint_no_arbitrary_proxy(self):
-        bad = [None, [], {"random": True}, {"provider": "other"}, {"model": "invented"},
-               {"baseUrl": "http://api.deepseek.com"}, {"baseUrl": "https://evil.example"},
+        bad = [None, [], {"random": True}, {"provider": "other"}, {"model": "bad model"},
+               {"baseUrl": "http://api.deepseek.com"}, {"baseUrl": "https://example.com/chat/completions"},
                {"baseUrl": "https://api.deepseek.com@evil.example"}, {"baseUrl": "https://api.deepseek.com/?x"},
                {"temperature": True}, {"temperature": 2.01}, {"maxTokens": 127}, {"maxTokens": 2048.0},
                {"historyTurns": 0}, {"historyTurns": 21}, {"maxTokens": 10 ** 500}, {"contextEnabled": "true"}, {"thinking": 1},
@@ -98,6 +98,26 @@ class SettingsAndChatTests(unittest.TestCase):
         public = self.service.update({"baseUrl": "https://api.deepseek.com/v1/", "model": "deepseek-v4-pro", "thinking": True})
         self.assertEqual(public["baseUrl"], "https://api.deepseek.com/v1")
         self.assertFalse(self.service.path.read_text(encoding="utf-8").find("apiKey") >= 0)
+
+    def test_custom_models_and_compatible_api_edit_preserves_key_and_payload(self):
+        self.service.update({"apiKey": TEST_KEY})
+        edited=self.service.update({"provider":"openai-compatible", "baseUrl":"https://gateway.example/v1/", "model":"vendor/custom-v2"})
+        self.assertTrue(edited["hasApiKey"])
+        self.assertEqual(edited["model"],"vendor/custom-v2")
+        self.assertEqual(edited["baseUrl"],"https://gateway.example/v1")
+        self.service.chat({"messages": messages()})
+        request,_=self.opener.calls[-1]
+        self.assertEqual(request.full_url,"https://gateway.example/v1/chat/completions")
+        payload=json.loads(request.data)
+        self.assertNotIn("thinking",payload)
+        self.assertEqual(request.headers["Authorization"],"Bearer "+TEST_KEY)
+        self.assertEqual(self.service.get()["model"],"vendor/custom-v2")
+        self.assertEqual(ai._base_url("http://127.0.0.1:11434/v1/"),"http://127.0.0.1:11434/v1")
+        for unsafe in ("http://192.168.1.1/v1", "https://user:pass@example.com/v1", "https://host/v1?key=x", "https://host/v1#key"):
+            with self.assertRaises(ai.DeepSeekError):ai._base_url(unsafe)
+        generic=ai.DeepSeekService(self.root,vault=self.vault,opener=self.opener,system_prompt=ai.GENERIC_SYSTEM_PROMPT)
+        _,_,sent=generic._prepare_chat({"messages":messages(),"context":{}})
+        self.assertNotIn("中车扶余",sent[0]["content"])
 
     def test_missing_key_is_actionable_without_fallback(self):
         for call in (lambda: self.service.test({}), lambda: self.service.chat({"messages": messages(), "context": {}})):
@@ -283,7 +303,7 @@ class DeepSeekHTTPTests(unittest.TestCase):
             self.assertNotIn(TEST_KEY.encode(), raw)
             self.assertNotIn(b"keyHint", raw)
         state = json.loads(self.request("GET", "/api/state")[1])
-        self.assertEqual(state["service"]["revision"], "10.1")
+        self.assertEqual(state["service"]["revision"], "11.0")
 
     def test_missing_key_validation_unknown_route_and_wrong_method(self):
         self.assertEqual(self.request("POST", "/api/chat", {"messages": messages()})[0], 409)

@@ -1,0 +1,1182 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Twin Knowledge & Agent Plugin API",
+    "version": "1.0.0",
+    "description": "Reusable local component; same-origin browser UI or explicitly authorized bearer integration. Project data is isolated by service data directory, not by a claimed projectId."
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8779",
+      "description": "Example local host; actual port depends on executable startup"
+    }
+  ],
+  "security": [
+    {
+      "IntegrationBearer": []
+    }
+  ],
+  "paths": {
+    "/api/plugin/v1/manifest": {
+      "get": {
+        "summary": "Component protocol and capabilities; no credentials",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Integration token missing/invalid"
+          },
+          "403": {
+            "description": "Host origin/configuration access not allowed"
+          },
+          "409": {
+            "description": "Stale citation or concurrent conversation"
+          }
+        }
+      }
+    },
+    "/api/plugin/v1/context/validate": {
+      "post": {
+        "summary": "Validate a neutral host context",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Integration token missing/invalid"
+          },
+          "403": {
+            "description": "Host origin/configuration access not allowed"
+          },
+          "409": {
+            "description": "Stale citation or concurrent conversation"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plugin/v1/settings": {
+      "get": {
+        "summary": "Read masked model configuration or update settings",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Integration token missing/invalid"
+          },
+          "403": {
+            "description": "Host origin/configuration access not allowed"
+          },
+          "409": {
+            "description": "Stale citation or concurrent conversation"
+          }
+        }
+      },
+      "put": {
+        "summary": "Read masked model configuration or update settings",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Integration token missing/invalid"
+          },
+          "403": {
+            "description": "Host origin/configuration access not allowed"
+          },
+          "409": {
+            "description": "Stale citation or concurrent conversation"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plugin/v1/settings/test": {
+      "post": {
+        "summary": "Test the saved provider connection",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Integration token missing/invalid"
+          },
+          "403": {
+            "description": "Host origin/configuration access not allowed"
+          },
+          "409": {
+            "description": "Stale citation or concurrent conversation"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plugin/v1/chat": {
+      "post": {
+        "summary": "Context-aware sourced Q&A",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Integration token missing/invalid"
+          },
+          "403": {
+            "description": "Host origin/configuration access not allowed"
+          },
+          "409": {
+            "description": "Stale citation or concurrent conversation"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plugin/v1/chat/stream": {
+      "post": {
+        "summary": "SSE: status/citations/reasoning/delta/done/error",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Integration token missing/invalid"
+          },
+          "403": {
+            "description": "Host origin/configuration access not allowed"
+          },
+          "409": {
+            "description": "Stale citation or concurrent conversation"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plugin/v1/conversations": {
+      "get": {
+        "summary": "Saved local conversations",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Integration token missing/invalid"
+          },
+          "403": {
+            "description": "Host origin/configuration access not allowed"
+          },
+          "409": {
+            "description": "Stale citation or concurrent conversation"
+          }
+        }
+      },
+      "post": {
+        "summary": "Saved local conversations",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Integration token missing/invalid"
+          },
+          "403": {
+            "description": "Host origin/configuration access not allowed"
+          },
+          "409": {
+            "description": "Stale citation or concurrent conversation"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plugin/v1/conversations/{id}": {
+      "get": {
+        "summary": "Restore a completed conversation",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Integration token missing/invalid"
+          },
+          "403": {
+            "description": "Host origin/configuration access not allowed"
+          },
+          "409": {
+            "description": "Stale citation or concurrent conversation"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{32}$"
+            }
+          }
+        ]
+      }
+    },
+    "/api/plugin/v1/knowledge/status": {
+      "get": {
+        "summary": "Persistent background parse queue status",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Integration token missing/invalid"
+          },
+          "403": {
+            "description": "Host origin/configuration access not allowed"
+          },
+          "409": {
+            "description": "Stale citation or concurrent conversation"
+          }
+        }
+      }
+    },
+    "/api/plugin/v1/knowledge/settings": {
+      "get": {
+        "summary": "Native/MinerU parser settings",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Integration token missing/invalid"
+          },
+          "403": {
+            "description": "Host origin/configuration access not allowed"
+          },
+          "409": {
+            "description": "Stale citation or concurrent conversation"
+          }
+        }
+      },
+      "put": {
+        "summary": "Native/MinerU parser settings",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Integration token missing/invalid"
+          },
+          "403": {
+            "description": "Host origin/configuration access not allowed"
+          },
+          "409": {
+            "description": "Stale citation or concurrent conversation"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plugin/v1/knowledge/groups": {
+      "get": {
+        "summary": "Document groups",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Integration token missing/invalid"
+          },
+          "403": {
+            "description": "Host origin/configuration access not allowed"
+          },
+          "409": {
+            "description": "Stale citation or concurrent conversation"
+          }
+        }
+      },
+      "post": {
+        "summary": "Document groups",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Integration token missing/invalid"
+          },
+          "403": {
+            "description": "Host origin/configuration access not allowed"
+          },
+          "409": {
+            "description": "Stale citation or concurrent conversation"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plugin/v1/knowledge/documents": {
+      "get": {
+        "summary": "List documents or upload the original file body",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Integration token missing/invalid"
+          },
+          "403": {
+            "description": "Host origin/configuration access not allowed"
+          },
+          "409": {
+            "description": "Stale citation or concurrent conversation"
+          }
+        }
+      },
+      "post": {
+        "summary": "List documents or upload the original file body",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Integration token missing/invalid"
+          },
+          "403": {
+            "description": "Host origin/configuration access not allowed"
+          },
+          "409": {
+            "description": "Stale citation or concurrent conversation"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary",
+                "maxLength": 41943040
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "filename",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "label",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "unit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "groupId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "objectId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "process",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/plugin/v1/knowledge/documents/{id}": {
+      "get": {
+        "summary": "Document metadata and domain associations",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Integration token missing/invalid"
+          },
+          "403": {
+            "description": "Host origin/configuration access not allowed"
+          },
+          "409": {
+            "description": "Stale citation or concurrent conversation"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{32}$"
+            }
+          }
+        ]
+      },
+      "put": {
+        "summary": "Document metadata and domain associations",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Integration token missing/invalid"
+          },
+          "403": {
+            "description": "Host origin/configuration access not allowed"
+          },
+          "409": {
+            "description": "Stale citation or concurrent conversation"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{32}$"
+            }
+          }
+        ]
+      }
+    },
+    "/api/plugin/v1/knowledge/documents/{id}/reparse": {
+      "post": {
+        "summary": "Reparse original; invalidate previous citation version",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Integration token missing/invalid"
+          },
+          "403": {
+            "description": "Host origin/configuration access not allowed"
+          },
+          "409": {
+            "description": "Stale citation or concurrent conversation"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{32}$"
+            }
+          }
+        ]
+      }
+    },
+    "/api/plugin/v1/knowledge/documents/{id}/source": {
+      "get": {
+        "summary": "Stream retained original bytes",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Integration token missing/invalid"
+          },
+          "403": {
+            "description": "Host origin/configuration access not allowed"
+          },
+          "409": {
+            "description": "Stale citation or concurrent conversation"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{32}$"
+            }
+          }
+        ]
+      }
+    },
+    "/api/plugin/v1/knowledge/documents/{id}/content": {
+      "get": {
+        "summary": "Parsed source blocks",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Integration token missing/invalid"
+          },
+          "403": {
+            "description": "Host origin/configuration access not allowed"
+          },
+          "409": {
+            "description": "Stale citation or concurrent conversation"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{32}$"
+            }
+          }
+        ]
+      }
+    },
+    "/api/plugin/v1/knowledge/documents/{id}/locate": {
+      "get": {
+        "summary": "Resolve exact document/item/version/page anchor",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Integration token missing/invalid"
+          },
+          "403": {
+            "description": "Host origin/configuration access not allowed"
+          },
+          "409": {
+            "description": "Stale citation or concurrent conversation"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{32}$"
+            }
+          },
+          {
+            "name": "itemId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/plugin/v1/knowledge/search": {
+      "get": {
+        "summary": "Search a bounded document/group/engineering scope",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Integration token missing/invalid"
+          },
+          "403": {
+            "description": "Host origin/configuration access not allowed"
+          },
+          "409": {
+            "description": "Stale citation or concurrent conversation"
+          }
+        },
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "unit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "groupId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "documentIds",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "objectId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "process",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 30
+            }
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "IntegrationBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Required for native/cross-origin integration. Same-origin browser UI uses the local host origin policy."
+      }
+    },
+    "schemas": {
+      "Context": {
+        "type": "object",
+        "properties": {
+          "systemId": {
+            "type": "string"
+          },
+          "projectId": {
+            "type": "string"
+          },
+          "unit": {
+            "enum": [
+              "ALL",
+              "WT",
+              "RD",
+              "CL",
+              "SS"
+            ]
+          },
+          "scope": {
+            "enum": [
+              "ALL",
+              "WT",
+              "RD",
+              "CL",
+              "SS"
+            ]
+          },
+          "object": {
+            "type": "object"
+          },
+          "process": {
+            "type": "object"
+          },
+          "location": {
+            "type": "object"
+          },
+          "host": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": true
+      },
+      "Citation": {
+        "type": "object",
+        "required": [
+          "documentId",
+          "itemId",
+          "citationVersion"
+        ],
+        "properties": {
+          "documentId": {
+            "type": "string"
+          },
+          "itemId": {
+            "type": "string"
+          },
+          "citationVersion": {
+            "type": "integer"
+          },
+          "page": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "bboxNormalized": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "minItems": 4,
+            "maxItems": 4
+          }
+        }
+      },
+      "SSEEvent": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "enum": [
+              "status",
+              "citations",
+              "reasoning",
+              "delta",
+              "done",
+              "error"
+            ]
+          },
+          "delta": {
+            "type": "string"
+          },
+          "reply": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

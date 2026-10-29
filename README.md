@@ -1,15 +1,21 @@
-# 扶余一号 · 风电建设数字孪生 V10.1
+# 扶余一号 · 风电建设数字孪生 V11.0 桌面版
 
 三维风场展示、界面控制后台、工程知识库与上下文智能体。默认仅在本机运行；GitHub 用于管理代码、文档与版本，并不自动把本机资料库部署到互联网。
 
-V10.1 修正 API 配置持久化、引用原文定位及对话流式输出。更新程序后继续保留原有 `data/`；原 V9 目录名保留，以维持既有启动入口。
+当前交付为 `00工作区/扶余一号数字孪生/扶余一号数字孪生.exe`，已包含 Python 运行环境及界面资源。双击后在桌面窗口顶部切换展示大屏、控制后台、知识与智能体、API 与解析设置。当前电脑已验证 Edge WebView2 内嵌窗口；引擎不可用时提供浏览器入口。
 
-## 启动
+API 类型、模型名称、根地址和新密钥均可编辑。接口类型支持 DeepSeek 与 OpenAI 兼容接口；HTTP 地址仅用于本机回环服务。输入新 Key 后保存会替换密钥，留空沿用已保存的密钥；先保存再测试，测试支持取消。
+
+桌面工作目录为 EXE 旁的 `workspace/data/`，原有资料、会话与界面配置已迁入，升级前备份在 `数据备份/`。更新时替换 EXE 并保留 workspace。密钥继续由 Windows 账户加密保存，不嵌入 EXE。
+
+独立组件使用 `扶余一号数字孪生.exe --plugin-only` 启动，不加载风场三维和界面编辑系统。其他项目以 `--data-dir <工作目录>` 使用独立资料库。版本化 API、浮窗 SDK、上下文与定位事件协议见 [组件接入文档](plugin/README.md)。
+
+## 从源码运行
 
 1. 安装 Python 3.11+；原电脑可继续使用现有启动脚本找到的运行时。
 2. `python -m pip install -r 开发源码/requirements.txt`，安装文字 PDF 提取依赖。TXT/MD/DOCX/XLSX 使用标准库解析。
 3. 双击 `启动控制后台.cmd` 或 `打开前端展示.cmd`。默认端口 8779；占用时自动选择其他端口，启动器会打开实际地址。
-4. 前台顶部“设置”配置自己的 DeepSeek API Key、模型、回复长度、记忆轮数与场景上下文。“资料导入与解析”进入知识库。
+4. 前台顶部“设置”配置 API Key、接口类型、地址、模型、回复长度、记忆轮数与场景上下文。“资料导入与解析”进入知识库。源码调试使用自己的数据根目录；正式数据位于桌面交付的 workspace。
 
 扫描 PDF、图片 OCR 需要另行安装 MinerU，在知识库“解析设置”选择可执行文件。仓库不包含 OCR 模型或 MinerU 环境；引擎缺失或解析失败会显示真实状态，不能把未解析文档当作可检索资料。
 
@@ -56,14 +62,18 @@ npm test
 python scripts/test-backend.py
 python 开发源码/build.py
 python 开发源码/package_delivery.py
+# Windows 构建环境另需安装 PyInstaller、pywebview；用户端无需安装。
+python scripts/build-exe.py
 ```
 
 源码集中于 `开发源码/`；`build.py` 将界面模块打包为两份 HTML。本机运行请保留完整程序目录，包含 `lib/` 中的 PDF.js 主模块、工作线程和许可文件。Node.js 仅用于构建语法检查与 DOM 测试。CI 在 Windows、Python 3.12 与 Node.js 24 上执行相同功能检查。
 
-交付脚本从本次后端和 UI 测试报告汇总数量，生成 `V10.1_交付验证记录.json` 及不含运行数据的 ZIP。已完成真实 DeepSeek 连接与思考/回答流式输出验证；浏览器原文定位验收结果见同版交付记录。原生文字/PDF/Office 与 MinerU 结构输出适配有自动测试，实际 OCR 引擎及模型环境仍需另行安装验证。
+交付脚本校验 EXE 并汇总本次后端与 UI 测试，生成使用说明、组件接入资料和交付验证记录。已验证 EXE 的窗口启动、API 编辑保存与真实 DeepSeek 连接，以及独立组件的导入、解析、检索和原文定位。扫描件 OCR 的实际 MinerU 环境仍需另行安装验证。
 
 后续更新：修改源码 → 测试 → 构建 → Git 提交和推送。更新部署目录前备份 `data/`；导出 UI JSON 不能替代知识原件与扫描件备份。
 
 ## 技术参考
 
 参考 [SpecFlow Engineering Studio](https://github.com/Maskicruis/specflow-engineering-studio/tree/b076c50fe5df28c628f97b5eafa052c1dff0188b) 的解析队列、分组检索、来源定位和本机服务组织方式。引用高亮使用其规范化坐标到 PDF 页面及视口的转换方式，并兼容 PDF.js 的视口矩阵。Three.js 许可见 `Three.js_LICENSE.txt`；PDF.js 许可与说明见 `lib/PDFJS_LICENSE.txt`、`lib/PDFJS_NOTICE.txt`。
+
+桌面打包依据 [PyInstaller 运行资源机制](https://pyinstaller.org/en/stable/runtime-information.html) 和 [pywebview Windows 打包方式](https://pywebview.flowrl.com/guide/freezing)。构建时保留运行时所需证书策略资源，HTTPS 证书校验继续生效。

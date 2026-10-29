@@ -163,7 +163,7 @@ class ServerTests(unittest.TestCase):
         status, raw, _ = self.request()
         self.assertEqual(status, 200)
         state = json.loads(raw)
-        self.assertEqual(state["service"], {"name": "fuyu-ui-studio", "revision": "10.1", "workspace": str(self.root.resolve())})
+        self.assertEqual(state["service"], {"name": "fuyu-ui-studio", "revision": "11.0", "workspace": str(self.root.resolve())})
         stored = self.httpd.store.state()
         self.assertEqual(set(stored), {"draft", "published", "versions"})
         self.assertEqual({k: state[k] for k in stored}, stored)

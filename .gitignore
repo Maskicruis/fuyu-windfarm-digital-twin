@@ -25,3 +25,7 @@ venv/
 /V9.2_交付验证记录.json
 /V10.0_交付验证记录.json
 /V10.1_交付验证记录.json
+*.exe
+*.spec
+/plugin-workspace/
+/webview-profile/

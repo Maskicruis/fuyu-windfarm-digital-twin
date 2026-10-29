@@ -1,0 +1,8 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>知识与智能体组件</title><link rel="stylesheet" href="/plugin/shared-system-settings.css"><link rel="stylesheet" href="/plugin/shared-knowledge-ui.css"><link rel="stylesheet" href="/plugin/widget.css"><body inert>
+<header class="topbar"><div><span class="brand-icon">✦</span><b>知识与智能体</b><small>CONTEXT · KNOWLEDGE · ACTION</small></div><div class="top-actions"><button id="plugin-close" type="button" aria-label="关闭组件">×</button></div></header>
+<section class="context"><span id="context-label">独立组件 · 全部资料</span><button id="plugin-new" type="button">新对话</button><button id="plugin-history" type="button">历史</button></section>
+<aside id="plugin-notice" role="status">正在连接本机组件…</aside><nav id="plugin-history-list" hidden></nav>
+<main id="plugin-messages" aria-label="智能体对话" aria-live="polite"><article class="welcome"><span>✦</span><h1>围绕场景，带着依据交流。</h1><p>导入资料后，提问、追问并核查原文。宿主场景可以独立接入。</p></article></main>
+<form id="plugin-form"><div class="composer-tools"><label>范围<select id="plugin-mode" aria-label="组件问答模式"><option value="auto">资料增强问答</option><option value="knowledge">仅资料库</option><option value="general">通用对话</option></select></label><button type="button" id="plugin-library">资料与解析</button><button type="button" id="plugin-stop" hidden>停止生成</button></div><textarea id="plugin-input" placeholder="输入问题，支持连续追问…" aria-label="向知识智能体提问" maxlength="12000" rows="3" required></textarea><footer><small>Enter 发送 · Shift+Enter 换行</small><button id="plugin-send" type="submit">发送 ↗</button></footer></form>
+<script src="/plugin/twin-knowledge-sdk.js"></script><script src="/plugin/widget.js"></script>
+</body></html>

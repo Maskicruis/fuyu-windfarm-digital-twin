@@ -1,6 +1,6 @@
 {
   "name": "fuyu-windfarm-digital-twin",
-  "version": "10.1.0",
+  "version": "11.0.0",
   "private": true,
   "scripts": {
     "test": "node scripts/run-ui-tests.cjs"

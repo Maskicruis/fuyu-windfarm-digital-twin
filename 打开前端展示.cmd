@@ -1,6 +1,10 @@
 @echo off
 chcp 65001 >nul
 setlocal
+if exist "%~dp0..\扶余一号数字孪生\扶余一号数字孪生.exe" (
+  start "" "%~dp0..\扶余一号数字孪生\扶余一号数字孪生.exe" --view
+  exit /b
+)
 set "FV_PY=C:\Users\Administrator\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe"
 if exist "%FV_PY%" (
   "%FV_PY%" "%~dp0开发源码\launcher.py" --view
