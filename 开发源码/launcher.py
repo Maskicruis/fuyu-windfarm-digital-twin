@@ -1,6 +1,8 @@
-"""Start or reuse this workspace's V11.0 service, without reusing an older server."""
+"""Start or reuse this workspace's current-version service, without reusing an older server."""
 from pathlib import Path
 import argparse,json,socket,subprocess,sys,time,urllib.request,webbrowser
+
+from app_version import VERSION
 
 ROOT=Path(__file__).resolve().parent.parent
 
@@ -9,7 +11,7 @@ def compatible(port,root=ROOT):
         with urllib.request.urlopen(f'http://127.0.0.1:{port}/api/state',timeout=.8) as response:
             state=json.load(response)
         service=state.get('service',{})
-        return (service.get('name')=='fuyu-ui-studio' and service.get('revision')=='11.0'
+        return (service.get('name')=='fuyu-ui-studio' and service.get('revision')==VERSION
                 and str(Path(service.get('workspace','')).resolve()).casefold()==str(root.resolve()).casefold())
     except (OSError,ValueError,TypeError):
         return False
@@ -40,7 +42,7 @@ def start(root=ROOT):
         for _ in range(60):
             if compatible(port,root):
                 (data/'server.pid').write_text(str(process.pid),encoding='ascii')
-                record.write_text(json.dumps({'port':port,'pid':process.pid,'revision':'11.0'},ensure_ascii=False),encoding='utf-8')
+                record.write_text(json.dumps({'port':port,'pid':process.pid,'revision':VERSION},ensure_ascii=False),encoding='utf-8')
                 return port
             if process.poll() is not None:break
             time.sleep(.15)

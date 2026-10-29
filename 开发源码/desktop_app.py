@@ -12,7 +12,7 @@ import time
 import urllib.request
 import webbrowser
 
-REVISION = '12.0'
+from app_version import VERSION as REVISION
 
 
 def asset_root():
@@ -113,10 +113,14 @@ def main(argv=None):
                 time.sleep(.5)
         try:
             import webview
-            webview.create_window('扶余一号 · 数字孪生' if not args.plugin_only else '知识与智能体组件',
+            window = webview.create_window('扶余一号 · 数字孪生' if not args.plugin_only else '知识与智能体组件',
                                   url, width=1600 if not args.plugin_only else 1000, height=940,
                                   min_size=(1100, 700) if not args.plugin_only else (600, 650),
                                   text_select=True)
+            if service and service.updater and getattr(sys,'frozen',False):
+                service.updater.target=Path(sys.executable).resolve()
+                service.updater.port=port
+                service.updater.exit_callback=window.destroy
             webview.start(gui='edgechromium', private_mode=False,
                           storage_path=str(workspace / 'webview-profile'))
         except Exception:

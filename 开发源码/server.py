@@ -583,6 +583,8 @@ class DocumentStore:
             return copy.deepcopy(row), path
 
 
+from app_version import VERSION
+
 class FuyuServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
@@ -595,6 +597,8 @@ class FuyuServer(ThreadingHTTPServer):
         from preferences import Preferences
         self.preferences = Preferences(self.workspace)
         self.plugin_only = plugin_only
+        from online_update import UpdateService
+        self.updater = None if plugin_only else UpdateService(self.workspace, self.root)
         if not plugin_only:
             for name in ('default-ui.json', 'object-catalog.json'):
                 source = self.root / 'config' / name
@@ -620,7 +624,7 @@ class FuyuServer(ThreadingHTTPServer):
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "FuyuLocal/12.0"
+    server_version = "FuyuLocal/"+VERSION
     sys_version = ""
 
     def end_headers(self):
@@ -868,20 +872,22 @@ class Handler(BaseHTTPRequestHandler):
         try:
             path = urlsplit(self.path).path
             if path == "/api/health":
-                self._reply(200, {"service":{"name":"fuyu-ui-studio", "revision":"12.0",
+                self._reply(200, {"service":{"name":"fuyu-ui-studio", "revision":VERSION,
                     "workspace":str(self.server.workspace), "mode":"plugin" if self.server.plugin_only else "application"}}, head=head)
             elif path == "/api/state":
                 state = self.server.store.state()
-                state["service"] = {"name": "fuyu-ui-studio", "revision": "12.0", "workspace": str(self.server.workspace)}
+                state["service"] = {"name": "fuyu-ui-studio", "revision": VERSION, "workspace": str(self.server.workspace)}
                 self._reply(200, state, head=head)
             elif path == "/api/published":
                 self._reply(200, self.server.store.state()["published"], head=head)
             elif path == "/api/system/preferences":
                 self._reply(200, self.server.preferences.get(), head=head)
+            elif path == "/api/update/status" and self.server.updater:
+                self._reply(200, self.server.updater.status(), head=head)
             elif path == "/api/settings":
                 self._reply(200, self.server.deepseek.get(), head=head)
             elif path == "/api/system/status":
-                self._reply(200, {"revision":"12.0","mode":"plugin" if self.server.plugin_only else "local","workspace":str(self.server.workspace),"knowledge":self.server.knowledge.status(),"interfaces":len(self.server.interfaces.list()["interfaces"]) if self.server.interfaces else 0}, head=head)
+                self._reply(200, {"revision":VERSION,"mode":"plugin" if self.server.plugin_only else "local","workspace":str(self.server.workspace),"knowledge":self.server.knowledge.status(),"interfaces":len(self.server.interfaces.list()["interfaces"]) if self.server.interfaces else 0}, head=head)
             elif path == "/api/agent/conversations":
                 self._reply(200, self.server.agent.list(), head=head)
             elif re.fullmatch(r"/api/agent/conversations/[a-f0-9]{32}", path):
@@ -1120,6 +1126,16 @@ class Handler(BaseHTTPRequestHandler):
             return
         try:
             path = urlsplit(self.path).path
+            if path.startswith('/api/update/') and self.server.updater:
+                from online_update import UpdateError
+                body = self._body()
+                if body is None:return
+                try:
+                    value = self.server.updater.configure(body) if path=='/api/update/settings' and method=='PUT' else self.server.updater.start(path.rsplit('/',1)[1]) if method=='POST' else None
+                    if value is None:self._error(405,'更新操作不支持此方法')
+                    else:self._reply(200,value)
+                except UpdateError as error:self._error(400,str(error))
+                return
             if method == "PUT" and path == "/api/system/preferences":
                 body = self._body()
                 if body is not None:

@@ -114,7 +114,7 @@ class V10IntegrationTests(unittest.TestCase):
             body={'messages':[{'role':'user','content':'检查'}],'context':context,'knowledge':knowledge}
             expected=200 if knowledge.get('mode')=='knowledge' else 400
             self.json('POST','/api/chat',body,expected=expected)
-        self.assertEqual(self.json(path='/api/system/status')['revision'],'12.0')
+        self.assertEqual(self.json(path='/api/system/status')['revision'],'0.9.1')
 
     def test_archive_restore_and_empty_scope_are_honest(self):
         doc=self.upload()

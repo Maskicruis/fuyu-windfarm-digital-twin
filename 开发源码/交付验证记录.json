@@ -1,15 +1,30 @@
 {
-  "date": "2026-10-29",
+  "date": "2026-10-30",
   "main": {
-    "passed": true,
-    "version": "12.0",
-    "binary_asset_equals_source": true,
-    "export_rehydration_guard": true,
-    "sha256": "d4966444f08e4f25d1294992aa5e5c8a3b858aa9b798f8c2b39da0d22814d10d",
-    "backend_tests": 142,
-    "live_ui": "drag and text editing verified",
-    "export": "required initializer DOM survives standalone export",
-    "data_backup": "统一工作台升级前数据_20261029.zip"
+    "version": "0.9.1",
+    "format": "Windows x64 EXE",
+    "sha256": "50895983baaca2c7da30c22556bd3cac2d1ee2ea22bf15060726d925ba54d2f3",
+    "bytes": 20238806,
+    "backend_tests": 153,
+    "binary_validation": {
+      "version": "0.9.1",
+      "health": true,
+      "frontend_matches_source": true,
+      "backend_matches_source": true,
+      "default_overview": true,
+      "update_status_available": true,
+      "sha256": "50895983baaca2c7da30c22556bd3cac2d1ee2ea22bf15060726d925ba54d2f3"
+    },
+    "online_update": {
+      "passed": true,
+      "real_windows_worker": true,
+      "replace_and_restart": true,
+      "startup_failure_rollback": true,
+      "workspace_data_preserved": true,
+      "package": "50895983baaca2c7da30c22556bd3cac2d1ee2ea22bf15060726d925ba54d2f3"
+    },
+    "data_location": "workspace/data",
+    "contains_user_data": false
   },
   "specflow": {
     "passed": true,
@@ -28,13 +43,15 @@
     "settings_and_history_survive_restart": true,
     "configured_port_survives_restart": true,
     "provider": "local mock, no real model API call",
-    "data_isolation": true
+    "data_isolation": true,
+    "validated_at": "2026-10-29; unchanged in V0.9.1"
   },
   "tests": {
-    "main_backend": 142,
+    "main_backend": 153,
     "specflow_retained": 35,
     "unified_workspace": "four disciplines; no secondary navigation; scoped archive; knowledge entry actions; playback",
-    "live_ui": "drag knowledge panel; text content list editable; settings save; all four disciplines"
+    "live_ui": "drag knowledge panel; text content list editable; settings save; all four disciplines",
+    "overview": "Three cards; zero/empty states; project settings; controller text editing verified"
   },
   "parser": {
     "engine": "installed MinerU, original pipeline",
