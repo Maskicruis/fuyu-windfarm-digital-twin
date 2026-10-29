@@ -1,17 +1,17 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>扶余一号 · 界面控制后台 V9.1</title><style>__ADMIN_CSS__</style></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>扶余一号 · 界面控制后台 V12.0</title><style>__ADMIN_CSS__</style></head>
 <body>
 <div class="studio-app">
   <header class="studio-topbar">
-    <div class="studio-brand"><span class="brand-mark">F</span><div><h1>扶余一号 · 界面控制后台</h1><small>UI STUDIO <b>V9.1</b></small></div></div>
+    <div class="studio-brand"><span class="brand-mark">F</span><div><h1>扶余一号 · 界面控制后台</h1><small>UI STUDIO <b>V12.0</b></small></div></div>
     <div class="connection"><i id="connection-dot"></i><span id="connection-status">正在连接本地服务…</span></div>
     <div class="top-actions"><button id="undo-btn" class="icon-btn" title="撤销 Ctrl+Z" aria-label="撤销">↶</button><button id="redo-btn" class="icon-btn" title="重做 Ctrl+Shift+Z" aria-label="重做">↷</button><span class="toolbar-divider"></span><button id="import-btn">导入配置</button><button id="export-config-btn">导出配置</button><button id="save-btn">保存草稿</button><button id="open-display-btn">打开展示 ↗</button><button id="publish-btn" class="primary">发布前端</button></div>
   </header>
   <div class="studio-workspace">
     <aside class="component-panel">
-      <div class="panel-heading"><h2>页面与组件</h2><button id="help-btn" class="quiet-button" title="使用说明">?</button></div>
-      <div class="page-context"><label>单位工程<select id="unit-select" aria-label="选择单位工程"><option value="WT">风力发电机组工程</option><option value="RD">场内交通工程</option><option value="CL">集电线路工程</option><option value="SS" selected>升压站工程</option><option value="ALL">项目全览</option></select></label><label>功能模块<select id="task-select" aria-label="选择功能模块"><option value="simulation">施工模拟演示</option><option value="overview" selected>施工管理辅助</option><option value="records">施工资料记录</option></select></label></div>
+      <div class="panel-heading"><h2>工程与组件</h2><button id="help-btn" class="quiet-button" title="使用说明">?</button></div>
+      <div class="page-context"><label>单位工程<select id="unit-select" aria-label="选择单位工程"><option value="WT">风力发电机组工程</option><option value="RD">场内交通工程</option><option value="CL">集电线路工程</option><option value="SS" selected>升压站工程</option><option value="ALL">项目全览</option></select></label><label hidden>工作台<select id="task-select" aria-label="统一工作台"><option value="overview" selected>统一施工工作台</option></select></label></div>
       <div class="preview-tools"><button id="show-agent-btn">展开智能体</button><button id="show-rails-btn">显示 / 收起侧栏</button></div>
       <label class="tree-search"><span>⌕</span><input id="tree-search" placeholder="搜索组件、文字或数值" aria-label="搜索组件与文字"></label>
       <div class="tree-tabs" role="tablist" aria-label="组件树筛选"><button data-tree-filter="components" class="active" role="tab">组件</button><button data-tree-filter="texts" role="tab">文字</button><button data-tree-filter="all" role="tab">全部</button></div>
@@ -21,7 +21,7 @@
     </aside>
     <main class="canvas-panel">
       <div class="canvas-toolbar"><div class="canvas-mode"><button id="edit-mode-btn" class="active">选取与编辑</button><button id="preview-mode-btn">交互预览</button></div><button id="register-docs-btn" class="compact-toolbar-button">资料登记</button><div class="canvas-size"><label>画幅<select id="viewport-select" aria-label="预览画幅"><option value="1920x1080">1920 × 1080</option><option value="1440x900">1440 × 900</option><option value="1280x720">1280 × 720</option><option value="390x844">390 × 844</option></select></label><label>缩放<select id="zoom-select" aria-label="预览缩放"><option value="auto">适应窗口</option><option value="0.5">50%</option><option value="0.75">75%</option><option value="1">100%</option></select></label></div></div>
-      <div class="canvas-information"><span id="current-page">升压站工程 / 施工管理辅助</span><span id="canvas-state"><i></i>后台草稿预览</span></div>
+      <div class="canvas-information"><span id="current-page">升压站工程 / 统一施工工作台</span><span id="canvas-state"><i></i>后台草稿预览</span></div>
       <div id="preview-stage" class="preview-stage"><div id="preview-wrap" class="preview-wrap"><iframe id="preview-frame" title="数字孪生界面实时编辑预览" sandbox="allow-scripts allow-same-origin allow-downloads allow-popups"></iframe></div><div id="preview-loading" class="preview-loading"><span class="loading-ring"></span><strong>正在载入编辑画布</strong><small id="preview-loading-detail">三维场景与界面配置分别加载</small></div><div id="preview-error" class="preview-error" hidden><span class="preview-error-icon">!</span><strong id="preview-error-title">编辑画布尚未就绪</strong><p id="preview-error-message"></p><div><button id="reload-preview-btn" class="primary">重载画布</button><button id="preview-help-btn">查看启动说明</button></div><small>草稿保留在当前后台；重载不会删除已编辑配置。</small></div></div>
       <footer class="canvas-footer"><span id="selection-caption">点击画布中的界面或在左侧选择组件</span><span id="save-status">尚未修改</span></footer>
     </main>

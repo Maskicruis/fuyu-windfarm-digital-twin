@@ -1,0 +1,31 @@
+{
+  "reference": "Maskicruis/specflow-engineering-studio",
+  "reference_commit": "b076c50fe5df28c628f97b5eafa052c1dff0188b",
+  "retained_module_sha256": {
+    "ui-modules/chat-images.js": "ffbc555360d7321ea572cb1bbce2f9d7286da7c86456fdb867ef18dca3da824d",
+    "ui-modules/chat-images.css": "e2a76c6d0937157db5ab53fadb75562fd6812ccd4ccdd8489ec5d0e17f399856",
+    "ui-modules/stream-client.js": "b7571554bb5078692bb0900a82c59f45db3d8d93a15afbcc79cf8a2af197b0cf",
+    "ui-modules/chat-view.js": "b29ffe90e3e471b948a015995e2156f6c65c1914e9a02c68d4a9043376e71366",
+    "ui-modules/chat-view.css": "bb3075791460f17e1a044193bdf0dfe7adefa3a652a98922c0ecc9869f345bce",
+    "lib/pdf.min.mjs": "a02824947bc48a70158e2e4cd935e4039ed8fff5ed9d9ad60353fcbf485cb91e",
+    "lib/pdf.worker.min.mjs": "9d9b4c2f61455ed9b9c5a174a25113a7c4af75ecc5e929600dc8848d6688a302"
+  },
+  "retained_inline_function_sha256": {
+    "citationAttrs": "0d82621a0f75dfa84f9d61f9a8d9426225705d8a9de51e16f9d27e2190143df0",
+    "citationLink": "10654864a5b722f27d7a54c4f30b1d29fcd0b090ed455d8cad9711d2947cfb5b",
+    "citationSourceLink": "0a0c51638986ef587790e48a9c43019d1dbffb5d815378afb0f889b7c085c0c8",
+    "answerHtml": "6c403a811f25167ebdfc94d234364d9d3a24859b92c472a9a55bf021d280b71b",
+    "citationCard": "3d6d8bae98e035a680c5007c992c3025395fd29e8100ee1f74f5e8c9f02fe34d",
+    "appendUserTurn": "90586d5fad38f6fedb839ab0f35cc9b16666d1cf316f8e76abba58d96fb1aa56",
+    "appendAssistantTurn": "c9ca72c787c6ad3dbd5f71c5ab5a0a36621a970650919c1ee0d4267d7f0facf3",
+    "askQuestion": "ec498d1d457b4f7fd1fb7e9d40ed2467371fde3f0fe18bd09d918b0d3778e074",
+    "openCitation": "acafb7d2d81851cad0df70726e8b0b42569f84cfb8a049dbce4ec0f240a39e75",
+    "openCitationFromLocation": "dd09ae5637f098cc4706b2355781e2934658204267a5ed6d2145dd7c72ed1a53"
+  },
+  "pdf_reader_module_sha256": "bb0d06f22d02cc1c6011675c58fc4c8a2524661bc10de529cae9697fb2f6c0c2",
+  "changes": [
+    "Removed project/design/checklist/tools/website-monitor/Harness/update/balance markup, state, handlers and modules.",
+    "Default navigation has only assistant/database; settings has parser/model only.",
+    "Unused feature selectors removed; original chat/image/stream modules and original PDF reader retained."
+  ]
+}

@@ -1,0 +1,43 @@
+[
+  {
+    "type": "text",
+    "text": "5.3.3 当站区采用强制排水时，雨水泵房（池）宜布置在站内场地较低处。",
+    "text_level": 0,
+    "bbox": [150, 110, 850, 155],
+    "page_idx": 14
+  },
+  {
+    "type": "text",
+    "text": "5.3.4 变压器广场的搬运轨道基础、电缆沟（隧）道应统筹布置。",
+    "text_level": 0,
+    "bbox": [150, 165, 850, 210],
+    "page_idx": 14
+  },
+  {
+    "type": "text",
+    "text": "5.4 建（构）筑物间距",
+    "text_level": 1,
+    "bbox": [390, 235, 650, 270],
+    "page_idx": 14
+  },
+  {
+    "type": "text",
+    "text": "5.4.1 建（构）筑物的火灾危险性分类及其耐火等级不应低于表 5.4.1 的规定。",
+    "text_level": 0,
+    "bbox": [150, 280, 850, 335],
+    "page_idx": 14
+  },
+  {
+    "type": "table",
+    "table_caption": ["表 5.4.1 建（构）筑物的火灾危险性分类及其耐火等级"],
+    "table_body": "<html><body><table><tr><th>建（构）筑物名称</th><th>火灾危险性分类</th><th>耐火等级</th></tr><tr><td>主控通信楼（室）</td><td>丁</td><td>二级</td></tr></table></body></html>",
+    "bbox": [185, 360, 815, 908],
+    "page_idx": 14
+  },
+  {
+    "type": "footer",
+    "text": "8",
+    "bbox": [495, 950, 510, 975],
+    "page_idx": 14
+  }
+]

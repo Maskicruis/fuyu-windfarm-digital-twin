@@ -1,0 +1,63 @@
+{
+  "repository": "https://github.com/Maskicruis/specflow-engineering-studio",
+  "commit": "b076c50fe5df28c628f97b5eafa052c1dff0188b",
+  "byte_identical_core": [
+    {
+      "path": "src/utils.js",
+      "sha256": "6788d33b27b1693542863468230aac8ff465eeb9fb203006dc1ecb238e7e14bc"
+    },
+    {
+      "path": "src/job-queue.js",
+      "sha256": "67f04f67310409e59b733fb460dd549c8e3a554c5cbaba546f9ca1ea48f0fd27"
+    },
+    {
+      "path": "src/mineru-adapter.js",
+      "sha256": "2dd0ea3aabb41c7d0fe43a9495c41bac71ec7f505f4338d7a2b16a089b5793a8"
+    },
+    {
+      "path": "src/pipeline.js",
+      "sha256": "1ad091b4f18b30545ded11d8812380bc2a1c33ed73b4bdb3746086587a677bdd"
+    },
+    {
+      "path": "src/transform.js",
+      "sha256": "1e1d642cb49fd2d15faf1017e01b33c460bb4c2ab8f06f094ca4c0fd422a2632"
+    },
+    {
+      "path": "src/rag.js",
+      "sha256": "342d1dd799e0b80e3aec199571cb222db7a7789ac94240246a5d6e476ad11ab1"
+    },
+    {
+      "path": "src/embeddings.js",
+      "sha256": "2f0b32187625774805c9086eb14a22f34bcb5930915a10f22cfc1d52dc542da8"
+    },
+    {
+      "path": "src/llm.js",
+      "sha256": "82cc6e03ed3f693d3eab1599e92f7ac9b85ed6b88423372b79fa72eae2678d13"
+    },
+    {
+      "path": "src/qa.js",
+      "sha256": "21a6770efe5977fc1063063c9b6af2d4eaacf146b9954cc8dcb0bcbdd6f8325b"
+    },
+    {
+      "path": "src/query-planner.js",
+      "sha256": "6dfe4e8d068ce38ff4cc37b46a6c800c4d73b6e222e2bac172df82b8b44f3408"
+    },
+    {
+      "path": "src/citation-links.js",
+      "sha256": "c63d3d51992158fdb2f4547bbaac70c10d23266b421273d662d2a10cce4b76d9"
+    },
+    {
+      "path": "src/chat-images.js",
+      "sha256": "a5dc2e986b8adab16836844a58aad0d01dc4fc611a4f8a67be969106f36ca480"
+    },
+    {
+      "path": "src/scenarios.js",
+      "sha256": "ac7c55dd7a3ff3aca1e807a4f0a51afb4304d254cde4fd4e2dde745e05ad5802"
+    }
+  ],
+  "adapted": {
+    "src/config.js": "Only default library location changed to DATA/library for isolated writable component state. Existing KB_ROOT/KB_DATA_DIR hooks unchanged.",
+    "src/service.js": "Removed ProjectWorkspace/SpecificationMonitor/WordFormat imports, startup, methods and advertised capabilities; kept original files/groups/parser/RAG/QA/conversations.",
+    "src/http-server.js": "Removed Word/slope/project-workspace/checklist/spec-monitor/tool endpoints/resources. Kept original settings/jobs/files/groups/search/QA/streams/history/citation and reader compatibility APIs."
+  }
+}

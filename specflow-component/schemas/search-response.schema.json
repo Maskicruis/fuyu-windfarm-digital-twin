@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specflow-design-assistant.local/schemas/search-response.schema.json",
+  "title": "SearchResponse（检索响应）",
+  "type": "object",
+  "required": [
+    "ok",
+    "apiVersion",
+    "data"
+  ],
+  "properties": {
+    "ok": {
+      "type": "boolean"
+    },
+    "apiVersion": {
+      "const": "v1"
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "query",
+        "hits"
+      ],
+      "properties": {
+        "query": {
+          "type": "string"
+        },
+        "queryPlan": {
+          "type": "object",
+          "description": "术语扩展、规范表达解释及需要向用户追问的歧义信息"
+        },
+        "hits": {
+          "type": "array",
+          "items": {
+            "$ref": "citation.schema.json"
+          }
+        }
+      }
+    }
+  }
+}

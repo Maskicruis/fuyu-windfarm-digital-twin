@@ -20,3 +20,5 @@ jobs:
       - run: python scripts/test-backend.py
       - run: npm test
       - run: python 开发源码/build.py
+      - run: npm ci --prefix specflow-component --omit=dev --ignore-scripts
+      - run: npm test --prefix specflow-component

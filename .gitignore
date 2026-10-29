@@ -29,3 +29,9 @@ venv/
 *.spec
 /plugin-workspace/
 /webview-profile/
+
+
+/specflow-component/release/
+/specflow-component/data/
+/specflow-component/workspace/
+/specflow-component/desktop-profile/

@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specflow-design-assistant.local/schemas/citation.schema.json",
+  "title": "Citation（可定位引用）",
+  "type": "object",
+  "required": [
+    "n",
+    "docId",
+    "title",
+    "page",
+    "itemId",
+    "type"
+  ],
+  "properties": {
+    "n": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "回答中的引用编号 [n]"
+    },
+    "docId": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "page": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "itemId": {
+      "type": "string",
+      "description": "内容块 id（p0001-i000000）"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "text",
+        "title",
+        "table",
+        "image",
+        "chart",
+        "equation",
+        "code",
+        "list",
+        "ref_text"
+      ]
+    },
+    "ref": {
+      "type": "string",
+      "description": "条文号（如 5.4.2），可能为空"
+    },
+    "snippet": {
+      "type": "string"
+    },
+    "score": {
+      "type": "number"
+    },
+    "matched": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "bm25",
+          "vector"
+        ]
+      },
+      "description": "命中来源（混合检索）"
+    },
+    "sourceUrl": {
+      "type": "string",
+      "description": "打开 SpecFlow 并定位、高亮该引用的相对 URL"
+    },
+    "rawSourceUrl": {
+      "type": "string",
+      "description": "直接读取原 PDF 的相对 URL"
+    },
+    "bbox": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 4,
+          "maxItems": 4,
+          "description": "PDF 点坐标 [x0,y0,x1,y1]（左下原点）"
+        }
+      ]
+    },
+    "bboxNormalized": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "array",
+          "items": { "type": "number", "minimum": 0, "maximum": 1 },
+          "minItems": 4,
+          "maxItems": 4,
+          "description": "归一化坐标 [x0,y0,x1,y1]（左上原点），客户端高亮优先使用"
+        }
+      ]
+    },
+    "locate": {
+      "type": "object",
+      "description": "跳转定位（供阅读器/外部系统直接使用）",
+      "properties": {
+        "docId": {
+          "type": "string"
+        },
+        "page": {
+          "type": "integer"
+        },
+        "itemId": {
+          "type": "string"
+        },
+        "bbox": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "bboxNormalized": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "array",
+              "items": { "type": "number", "minimum": 0, "maximum": 1 }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

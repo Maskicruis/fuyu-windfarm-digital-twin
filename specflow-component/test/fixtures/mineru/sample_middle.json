@@ -1,0 +1,15 @@
+{
+  "_backend": "pipeline",
+  "_version_name": "test",
+  "pdf_info": [
+    {
+      "page_idx": 14,
+      "page_size": [595.32, 841.92],
+      "preproc_blocks": [
+        { "type": "text", "bbox": [90, 235, 510, 275], "lines": [{ "spans": [{ "content": "5.4.1" }] }] },
+        { "type": "title", "bbox": [235, 195, 390, 225], "lines": [{ "spans": [{ "content": "5.4" }] }] },
+        { "type": "text", "bbox": [90, 90, 510, 130], "lines": [{ "spans": [{ "content": "5.3.3" }] }] }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+.title-model.ok{ color: var(--renewable); }
+.title-model.warn{ color: var(--amber); }
+.title-tool,.window-button{ flex-shrink: 0; white-space: nowrap; }
+.title-tool svg{ flex-shrink: 0; }
+#modelTitleLabel{ max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 1180px){.desktop-titlebar{ grid-template-columns: minmax(210px, 1fr) auto auto; gap: 12px; }
+.desktop-titlebar .title-brand{ min-width: 0; }
+.desktop-titlebar .title-copy small{ display: none; }
+.desktop-titlebar .title-copy strong{ white-space: nowrap; }
+.desktop-runtime{ max-width: 145px; overflow: hidden; white-space: nowrap; }
+.title-tool{ padding: 0 8px; }
+#modelTitleLabel{ max-width: 105px; }}
+@media (max-width: 1100px){.desktop-runtime{ max-width: 125px; font-size: 9px; }
+.title-tool:not(.title-model) > span{ display: none; }}

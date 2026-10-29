@@ -16,7 +16,7 @@ def main():
     work = ROOT/'开发源码/验收产物/exe-build'
     args.output.mkdir(parents=True, exist_ok=True)
     assets = ['frontend.html', 'admin.html', 'desktop-home.html', 'config', 'lib', 'plugin', 'Three.js_LICENSE.txt']
-    command = [sys.executable, '-m', 'PyInstaller', '--noconfirm', '--clean', '--onefile', '--windowed',
+    command = [sys.executable, '-m', 'PyInstaller', '--noconfirm', '--onefile', '--windowed',
                '--name', '扶余一号数字孪生', '--distpath', str(args.output), '--workpath', str(work/'build'),
                '--specpath', str(work), '--paths', str(ROOT/'开发源码'), '--collect-all', 'webview',
                '--collect-all', 'pythonnet', '--hidden-import', 'pypdf', '--hidden-import', 'tkinter',
@@ -35,7 +35,7 @@ def main():
     command.append(str(ROOT/'开发源码/desktop_app.py'))
     subprocess.run(command, cwd=ROOT, check=True)
     executable = args.output/'扶余一号数字孪生.exe'
-    result = {'version':'11.0','executable':str(executable),'bytes':executable.stat().st_size,
+    result = {'version':'12.0','executable':str(executable),'bytes':executable.stat().st_size,
               'sha256':hashlib.sha256(executable.read_bytes()).hexdigest(),
               'contains_user_data':False,'bundles_python':True,'embedded_engine':'Microsoft Edge WebView2'}
     (args.output/'构建信息.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),'utf-8')

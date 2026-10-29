@@ -1,0 +1,62 @@
+{
+  "name": "specflow-knowledge-component",
+  "version": "1.0.0",
+  "description": "SpecFlow-derived standalone file parsing, knowledge and language model component",
+  "author": "Maskicruis",
+  "license": "MIT",
+  "private": true,
+  "main": "desktop/main.cjs",
+  "type": "commonjs",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.js",
+    "build": "electron-builder --win portable"
+  },
+  "dependencies": {
+    "https-proxy-agent": "7.0.6"
+  },
+  "devDependencies": {
+    "electron": "44.3.0",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "cn.maskicruis.specflow.knowledge.component",
+    "productName": "SpecFlow 知识组件",
+    "asar": false,
+    "npmRebuild": false,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "desktop/**",
+      "src/**",
+      "ui-modules/**",
+      "lib/**",
+      "schemas/**",
+      "build/app.ico",
+      "build/app.png",
+      "build/specflow-mark.svg",
+      "ui.html",
+      "package.json",
+      "UPSTREAM-BACKEND.json",
+      "ui-provenance.json",
+      "NOTICE.md",
+      "integration/**"
+    ],
+    "win": {
+      "icon": "build/app.ico",
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "signAndEditExecutable": false
+    },
+    "portable": {
+      "artifactName": "SpecFlow-Knowledge-Component-${version}-x64.exe"
+    }
+  }
+}

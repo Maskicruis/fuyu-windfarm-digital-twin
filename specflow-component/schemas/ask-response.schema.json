@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specflow-design-assistant.local/schemas/ask-response.schema.json",
+  "title": "AskResponse（问答响应）",
+  "type": "object",
+  "required": [
+    "ok",
+    "apiVersion",
+    "data"
+  ],
+  "properties": {
+    "ok": {
+      "type": "boolean"
+    },
+    "apiVersion": {
+      "const": "v1"
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "mode",
+        "citations"
+      ],
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "llm",
+            "retrieval",
+            "empty",
+            "unavailable",
+            "llm-error",
+            "clarification"
+          ],
+          "description": "llm=模型生成；retrieval=未配 LLM 时的检索结果"
+        },
+        "answer": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        },
+        "error": {
+          "type": "string"
+        },
+        "scenario": {
+          "type": "string",
+          "enum": [
+            "design",
+            "research",
+            "general"
+          ]
+        },
+        "retrievalMode": {
+          "type": "string",
+          "enum": ["auto", "knowledge", "general"]
+        },
+        "grounding": {
+          "type": "string",
+          "enum": ["knowledge", "general", "none"]
+        },
+        "needsClarification": {
+          "type": "boolean"
+        },
+        "clarification": {
+          "type": "object"
+        },
+        "queryPlan": {
+          "type": "object"
+        },
+        "question": {
+          "type": "string"
+        },
+        "model": { "type": "string", "description": "本轮实际调用的模型（包含图片时可能是图像模型）" },
+        "images": { "type": "array", "items": { "$ref": "chat-image.schema.json" } },
+        "imageContext": { "type": ["object", "null"], "description": "图像识别的检索摘要，不属于规范依据", "properties": { "text": { "type": "string" }, "searchTerms": { "type": "string" }, "model": { "type": "string" } } },
+        "conversationId": {
+          "type": "string",
+          "description": "会话 id（用于回溯/联动）"
+        },
+        "usage": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object"
+            }
+          ]
+        },
+        "retrieval": {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": [
+                "bm25",
+                "hybrid",
+                "disabled",
+                "clarification"
+              ]
+            },
+            "embeddingModel": {
+              "type": "string"
+            },
+            "vectors": {
+              "type": "integer"
+            },
+            "fused": {
+              "type": "boolean"
+            },
+            "note": {
+              "type": "string"
+            }
+          }
+        },
+        "citations": {
+          "type": "array",
+          "items": {
+            "$ref": "citation.schema.json"
+          }
+        }
+      }
+    }
+  }
+}

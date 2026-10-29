@@ -1,0 +1,5 @@
+PDF.js 6.3.289 / build 1c8020a7d
+Copyright 2024 Mozilla Foundation.
+Apache License, Version 2.0; see PDFJS_LICENSE.txt.
+Bundled original files copied from the user-specified SpecFlow reference project lib/. Headers are preserved.
+https://github.com/mozilla/pdf.js

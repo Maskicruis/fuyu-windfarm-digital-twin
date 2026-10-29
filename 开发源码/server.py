@@ -592,6 +592,8 @@ class FuyuServer(ThreadingHTTPServer):
         self.root = Path(root).resolve()
         self.workspace = Path(data_root).resolve() if data_root is not None else self.root
         self.workspace.mkdir(parents=True, exist_ok=True)
+        from preferences import Preferences
+        self.preferences = Preferences(self.workspace)
         self.plugin_only = plugin_only
         if not plugin_only:
             for name in ('default-ui.json', 'object-catalog.json'):
@@ -618,7 +620,7 @@ class FuyuServer(ThreadingHTTPServer):
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "FuyuLocal/11.0"
+    server_version = "FuyuLocal/12.0"
     sys_version = ""
 
     def end_headers(self):
@@ -866,18 +868,20 @@ class Handler(BaseHTTPRequestHandler):
         try:
             path = urlsplit(self.path).path
             if path == "/api/health":
-                self._reply(200, {"service":{"name":"fuyu-ui-studio", "revision":"11.0",
+                self._reply(200, {"service":{"name":"fuyu-ui-studio", "revision":"12.0",
                     "workspace":str(self.server.workspace), "mode":"plugin" if self.server.plugin_only else "application"}}, head=head)
             elif path == "/api/state":
                 state = self.server.store.state()
-                state["service"] = {"name": "fuyu-ui-studio", "revision": "11.0", "workspace": str(self.server.workspace)}
+                state["service"] = {"name": "fuyu-ui-studio", "revision": "12.0", "workspace": str(self.server.workspace)}
                 self._reply(200, state, head=head)
             elif path == "/api/published":
                 self._reply(200, self.server.store.state()["published"], head=head)
+            elif path == "/api/system/preferences":
+                self._reply(200, self.server.preferences.get(), head=head)
             elif path == "/api/settings":
                 self._reply(200, self.server.deepseek.get(), head=head)
             elif path == "/api/system/status":
-                self._reply(200, {"revision":"11.0","mode":"plugin" if self.server.plugin_only else "local","workspace":str(self.server.workspace),"knowledge":self.server.knowledge.status(),"interfaces":len(self.server.interfaces.list()["interfaces"]) if self.server.interfaces else 0}, head=head)
+                self._reply(200, {"revision":"12.0","mode":"plugin" if self.server.plugin_only else "local","workspace":str(self.server.workspace),"knowledge":self.server.knowledge.status(),"interfaces":len(self.server.interfaces.list()["interfaces"]) if self.server.interfaces else 0}, head=head)
             elif path == "/api/agent/conversations":
                 self._reply(200, self.server.agent.list(), head=head)
             elif re.fullmatch(r"/api/agent/conversations/[a-f0-9]{32}", path):
@@ -1116,6 +1120,14 @@ class Handler(BaseHTTPRequestHandler):
             return
         try:
             path = urlsplit(self.path).path
+            if method == "PUT" and path == "/api/system/preferences":
+                body = self._body()
+                if body is not None:
+                    try:
+                        self._reply(200, self.server.preferences.update(body))
+                    except (ValueError, TypeError):
+                        self._error(400, "项目参数格式无效")
+                return
             if path.startswith("/api/knowledge/"):
                 self._knowledge_mutate(method, path)
                 return

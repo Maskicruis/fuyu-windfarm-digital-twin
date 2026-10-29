@@ -8,3 +8,4 @@
 *.cmd text eol=crlf
 *.png binary
 *.jpg binary
+/specflow-component/** -text

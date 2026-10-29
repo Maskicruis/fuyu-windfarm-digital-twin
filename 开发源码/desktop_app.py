@@ -12,7 +12,7 @@ import time
 import urllib.request
 import webbrowser
 
-REVISION = '11.0'
+REVISION = '12.0'
 
 
 def asset_root():

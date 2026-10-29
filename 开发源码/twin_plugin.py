@@ -132,11 +132,11 @@ class PluginAdapter:
 
     def public_response(self, value):
         if isinstance(value, dict):
-            return {key: self.public_response(item) for key, item in value.items()}
+            return {key: (PREFIX + item[len('/api'):] if key == 'sourceUrl'
+                          and isinstance(item, str) and item.startswith('/api/knowledge/')
+                          else self.public_response(item)) for key, item in value.items()}
         if isinstance(value, list):
             return [self.public_response(item) for item in value]
-        if isinstance(value, str) and value.startswith('/api/knowledge/'):
-            return PREFIX + value[len('/api'):]
         return value
 
     def normalize_body(self, path, body):

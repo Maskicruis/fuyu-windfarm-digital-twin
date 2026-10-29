@@ -55,6 +55,13 @@ class PluginContractTests(unittest.TestCase):
         for bad in (PREFIX+'/interfaces',PREFIX+'/../settings',PREFIX+'/knowledge/documents/../../data',PREFIX+'/conversations/not-a-document','/api/settings'):
             self.assertIsNone(self.adapter.rewrite_path(bad))
 
+    def test_only_source_url_fields_are_rewritten(self):
+        value={'sourceUrl':'/api/knowledge/documents/abc/source','text':'/api/knowledge/raw text','nested':[{'answer':'/api/knowledge/keep','sourceUrl':'/api/knowledge/documents/def/source'}]}
+        result=self.adapter.public_response(value)
+        self.assertEqual(result['text'], value['text'])
+        self.assertEqual(result['nested'][0]['answer'], '/api/knowledge/keep')
+        self.assertTrue(result['sourceUrl'].startswith(PREFIX+'/knowledge/'))
+
     def test_neutral_host_context_is_not_assumed_to_be_wind_farm_unit(self):
         value={'systemId':'other-twin','projectId':'test-project','object':{'id':'generic-object','label':'Generic asset'},'location':{'zone':'A'},'host':{'discipline':'building'}}
         clean=validate_context(value)

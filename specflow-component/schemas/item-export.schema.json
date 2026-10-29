@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specflow-design-assistant.local/schemas/item-export.schema.json",
+  "title": "ItemExport（结构化条目卡片导出，联动预留）",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "kind",
+    "document",
+    "cards"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0"
+    },
+    "kind": {
+      "const": "item-cards"
+    },
+    "document": {
+      "type": "object",
+      "required": [
+        "id",
+        "title"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "sourceName": {
+          "type": "string"
+        }
+      }
+    },
+    "cards": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "itemId",
+          "page",
+          "type",
+          "locate"
+        ],
+        "properties": {
+          "itemId": {
+            "type": "string"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "type": {
+            "type": "string"
+          },
+          "ref": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "html": {
+            "type": "string"
+          },
+          "asset": {
+            "type": "string"
+          },
+          "caption": {
+            "type": "string"
+          },
+          "bbox": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              }
+            ]
+          },
+          "bboxNormalized": {
+            "oneOf": [
+              { "type": "null" },
+              { "type": "array", "items": { "type": "number", "minimum": 0, "maximum": 1 }, "minItems": 4, "maxItems": 4 }
+            ]
+          },
+          "sourceUrl": {
+            "type": "string"
+          },
+          "locate": {
+            "type": "object",
+            "properties": {
+              "docId": {
+                "type": "string"
+              },
+              "page": {
+                "type": "integer"
+              },
+              "itemId": {
+                "type": "string"
+              },
+              "bbox": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    }
+                  }
+                ]
+              },
+              "bboxNormalized": {
+                "oneOf": [
+                  { "type": "null" },
+                  { "type": "array", "items": { "type": "number", "minimum": 0, "maximum": 1 }, "minItems": 4, "maxItems": 4 }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

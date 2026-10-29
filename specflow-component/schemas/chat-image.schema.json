@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specflow-design-assistant.local/schemas/chat-image.schema.json",
+  "title": "ChatImage（聊天图片引用）",
+  "type": "object",
+  "required": ["id", "name", "mime", "size", "previewUrl"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^img_[0-9a-f-]{36}$" },
+    "name": { "type": "string" },
+    "mime": { "enum": ["image/png", "image/jpeg", "image/gif", "image/webp"] },
+    "size": { "type": "integer", "minimum": 1, "maximum": 8388608 },
+    "width": { "type": "integer", "minimum": 1, "maximum": 8192 },
+    "height": { "type": "integer", "minimum": 1, "maximum": 8192 },
+    "previewUrl": { "type": "string", "pattern": "^/api/v1/chat/images/img_" }
+  }
+}
