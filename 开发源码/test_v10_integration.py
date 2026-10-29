@@ -24,7 +24,7 @@ class V10IntegrationTests(unittest.TestCase):
         self.root=Path(self.temp.name)
         (self.root/'frontend.html').write_text('<!doctype html><script id="fuyu-display-config" type="application/json">{"version":2,"profiles":{}}</script>','utf-8')
         (self.root/'admin.html').write_text('<!doctype html><title>Admin</title>','utf-8')
-        self.httpd=server.FuyuServer(('127.0.0.1',0),self.root)
+        self.httpd=server.FuyuServer(('127.0.0.1',0),self.root,persistent_credentials=False)
         self.httpd.RequestHandlerClass=QuietHandler
         self.httpd.deepseek.vault=MemoryVault()
         self.httpd.knowledge.update_settings({'engine':'native','mineruExecutable':''})
@@ -114,7 +114,7 @@ class V10IntegrationTests(unittest.TestCase):
             body={'messages':[{'role':'user','content':'检查'}],'context':context,'knowledge':knowledge}
             expected=200 if knowledge.get('mode')=='knowledge' else 400
             self.json('POST','/api/chat',body,expected=expected)
-        self.assertEqual(self.json(path='/api/system/status')['revision'],'10.0')
+        self.assertEqual(self.json(path='/api/system/status')['revision'],'10.1')
 
     def test_archive_restore_and_empty_scope_are_honest(self):
         doc=self.upload()

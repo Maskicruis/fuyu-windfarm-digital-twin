@@ -17,6 +17,6 @@ jobs:
           node-version: '24'
       - run: python -m pip install -r 开发源码/requirements.txt
       - run: npm install --ignore-scripts
-      - run: python -m unittest discover -s 开发源码 -p "test_*.py"
+      - run: python scripts/test-backend.py
       - run: npm test
       - run: python 开发源码/build.py

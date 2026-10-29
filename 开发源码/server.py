@@ -17,6 +17,8 @@ import os
 from pathlib import Path
 import re
 import sys
+import select
+import socket
 import tempfile
 import threading
 import uuid
@@ -583,11 +585,11 @@ class FuyuServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 
-    def __init__(self, address, root):
+    def __init__(self, address, root, *, persistent_credentials=True):
         self.root = Path(root).resolve()
         self.store = Store(self.root)
         self.documents = DocumentStore(self.root)
-        self.deepseek = DeepSeekService(self.root)
+        self.deepseek = DeepSeekService(self.root, account_store=persistent_credentials)
         self.knowledge = KnowledgeStore(self.root)
         self.agent = AgentService(self.root, self.knowledge, self.deepseek)
         self.interfaces = InterfaceStore(self.root)
@@ -600,7 +602,7 @@ class FuyuServer(ThreadingHTTPServer):
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "FuyuLocal/10.0"
+    server_version = "FuyuLocal/10.1"
     sys_version = ""
 
     def _reply(self, status, value, *, head=False):
@@ -785,14 +787,14 @@ class Handler(BaseHTTPRequestHandler):
             path = urlsplit(self.path).path
             if path == "/api/state":
                 state = self.server.store.state()
-                state["service"] = {"name": "fuyu-ui-studio", "revision": "10.0", "workspace": str(self.server.root.resolve())}
+                state["service"] = {"name": "fuyu-ui-studio", "revision": "10.1", "workspace": str(self.server.root.resolve())}
                 self._reply(200, state, head=head)
             elif path == "/api/published":
                 self._reply(200, self.server.store.state()["published"], head=head)
             elif path == "/api/settings":
                 self._reply(200, self.server.deepseek.get(), head=head)
             elif path == "/api/system/status":
-                self._reply(200, {"revision":"10.0","mode":"local","knowledge":self.server.knowledge.status(),"interfaces":len(self.server.interfaces.list()["interfaces"])}, head=head)
+                self._reply(200, {"revision":"10.1","mode":"local","knowledge":self.server.knowledge.status(),"interfaces":len(self.server.interfaces.list()["interfaces"])}, head=head)
             elif path == "/api/agent/conversations":
                 self._reply(200, self.server.agent.list(), head=head)
             elif re.fullmatch(r"/api/agent/conversations/[a-f0-9]{32}", path):
@@ -820,6 +822,44 @@ class Handler(BaseHTTPRequestHandler):
         except (OSError, ValueError):
             self._error(500, "读取失败，请检查本地文件")
 
+    def _chat_stream(self, body):
+        self.connection.settimeout(95)
+        self.send_response(200)
+        self.send_header("Content-Type","text/event-stream; charset=utf-8")
+        self.send_header("Cache-Control","no-cache, no-transform")
+        self.send_header("X-Accel-Buffering","no")
+        self.send_header("Connection","close")
+        self.end_headers()
+        self.close_connection=True
+        disconnected=False
+        def cancelled():
+            nonlocal disconnected
+            if disconnected:return True
+            try:
+                ready,_,_=select.select([self.connection],[],[],0)
+                if ready and self.connection.recv(1,socket.MSG_PEEK)==b'':disconnected=True
+            except (OSError,ValueError):disconnected=True
+            return disconnected
+        def emit(event):
+            nonlocal disconnected
+            if cancelled():raise ConnectionAbortedError()
+            try:
+                raw=("data: "+json.dumps(event,ensure_ascii=False,allow_nan=False)+"\n\n").encode('utf-8')
+                self.wfile.write(raw);self.wfile.flush()
+            except (OSError,ValueError):
+                disconnected=True;raise ConnectionAbortedError() from None
+        try:
+            self.server.agent.stream(body,emit,cancelled)
+        except (ConnectionError,BrokenPipeError):pass
+        except (DeepSeekError,KnowledgeError,InterfaceError,ValidationError) as error:
+            if not cancelled():
+                try:emit({'type':'error','error':str(error),'status':getattr(error,'status',400)})
+                except ConnectionError:pass
+        except Exception:
+            if not cancelled():
+                try:emit({'type':'error','error':'流式回答中断，请重试。','status':500})
+                except ConnectionError:pass
+
     def _knowledge_get(self, path, *, head=False):
         store=self.server.knowledge
         if path=="/api/knowledge/status":value=store.status()
@@ -834,6 +874,11 @@ class Handler(BaseHTTPRequestHandler):
                 except ValueError:raise ValidationError("检索条数无效")
             value=store.search(query)
         else:
+            locate=re.fullmatch(r"/api/knowledge/documents/([a-f0-9]{32})/locate",path)
+            if locate:
+                query=self._query(("itemId","page","version"))
+                value=store.resolve_citation(locate.group(1),item_id=query.get('itemId'),page=query.get('page'),version=query.get('version'))
+                self._reply(200,value,head=head);return
             match=re.fullmatch(r"/api/knowledge/documents/([a-f0-9]{32})(?:/(content|source))?",path)
             if not match:raise KnowledgeError("知识库接口不存在",404)
             ident,action=match.groups()
@@ -948,12 +993,12 @@ class Handler(BaseHTTPRequestHandler):
         if not target.is_file():
             self._error(404, "文件不存在")
             return
-        if target.suffix.lower() not in (".html", ".htm", ".css", ".js", ".json", ".png", ".jpg", ".jpeg", ".svg", ".ico", ".webp", ".txt", ".pdf", ".zip"):
+        if target.suffix.lower() not in (".html", ".htm", ".css", ".js", ".mjs", ".json", ".png", ".jpg", ".jpeg", ".svg", ".ico", ".webp", ".txt", ".pdf", ".zip"):
             self._error(403, "文件类型不可访问")
             return
         raw = target.read_bytes()
         mime = mimetypes.guess_type(target.name)[0] or "application/octet-stream"
-        if target.suffix.lower() == ".js":
+        if target.suffix.lower() in (".js",".mjs"):
             mime = "text/javascript"
         if mime.startswith("text/") or mime in ("application/json", "text/javascript"):
             mime += "; charset=utf-8"
@@ -999,6 +1044,10 @@ class Handler(BaseHTTPRequestHandler):
                 if body is not None:
                     record = self.server.documents.update(path.split("/")[3], body)
                     self._reply(200, {"ok": True, "document": record})
+                return
+            if method=="POST" and path=="/api/chat/stream":
+                body=self._body()
+                if body is not None:self._chat_stream(body)
                 return
             if (method, path) in (("PUT", "/api/settings"), ("POST", "/api/settings/test"), ("POST", "/api/chat")):
                 body = self._body()

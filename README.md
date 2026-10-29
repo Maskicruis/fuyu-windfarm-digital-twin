@@ -1,6 +1,8 @@
-# 扶余一号 · 风电建设数字孪生 V10.0
+# 扶余一号 · 风电建设数字孪生 V10.1
 
 三维风场展示、界面控制后台、工程知识库与上下文智能体。默认仅在本机运行；GitHub 用于管理代码、文档与版本，并不自动把本机资料库部署到互联网。
+
+V10.1 修正 API 配置持久化、引用原文定位及对话流式输出。更新程序后继续保留原有 `data/`；原 V9 目录名保留，以维持既有启动入口。
 
 ## 启动
 
@@ -26,16 +28,20 @@
 
 - 同一悬浮智能体支持资料增强问答、仅资料库检索、通用对话；没有第二个问答页面。
 - “仅资料库”明确返回原文摘录，不调用模型；无命中不会自动扩大分组。
-- PDF 按真实页码打开原件；TXT、DOCX、XLSX 按解析片段定位。原生 PDF 提取没有坐标时不生成虚假高亮。MinerU 的有效坐标作为来源元信息保存。
+- 引用沿用 SpecFlow 的文档、解析版本、内容块及页码校验方式，核对通过后才打开原文。旧引用失效时提示重新检索，不跳到同页首段或其他内容块。
+- PDF 使用随程序附带的 PDF.js 显示原件和真实页码，有有效坐标时高亮对应内容块；支持缩放、翻页和“返回引用”。原生 PDF 提取没有坐标时不生成高亮。TXT、DOCX、XLSX 按对应解析片段定位。
 - 资料可以关联单位工程、对象与工序。用户明确点击“定位工程”后，才跳转到已登记的三维对象；不执行模型返回的任意命令或地址。
 - 完成的对话保存在本机，刷新后可通过“本机对话”恢复；切换上下文取消本页旧请求，迟到回答不会覆盖当前对话。
+- 模型的思考与回答通过 SSE 实时逐段显示。“深度思考”开启且 API 返回思考内容时，可展开查看；不生成预设思考过程。思考内容独立保存，不作为下一轮用户提问的历史正文发送。
 - 质量通病、危大工程、验收标准保留界面直观提示；资源、工艺与质量要点由智能体承担。施工模拟保持独立。
 
 ## 数据与配置
 
 `config/default-ui.json` 为新安装的初始布局；已有 `data/draft.json`、`data/published.json` 优先，更新不会覆盖本机配置。`config/object-catalog.json` 约束外部接口可更新的场景对象。
 
-`data/` 保存布局草稿、发布历史、扫描件、知识原件/解析/SQLite、会话和非秘密参数，全部排除 Git。API Key 使用 Windows DPAPI 保存在当前用户本地目录，既不进入页面，也不进入代码仓库。移动项目路径或更换 Windows 账户后需重新填写密钥。
+`data/` 保存布局草稿、发布历史、扫描件、知识原件/解析/SQLite、会话和项目普通参数，全部排除 Git。DeepSeek API Key 使用 Windows DPAPI 加密，保存在当前 Windows 账户的 `%LOCALAPPDATA%/FuyuUIStudio/credentials/deepseek.key`；模型等普通参数也保存在该账户目录。页面只显示密钥是否已保存，不回传原始密钥。
+
+刷新、重启服务或在同一 Windows 账户下移动项目目录后，可继续读取已保存的 DeepSeek 配置。升级时会自动迁移旧项目密钥及参数；主动清除密钥后不会从旧副本恢复。更换 Windows 账户或电脑时需重新配置密钥。外部数据接口的凭据仍按项目单独加密保存，与 DeepSeek 配置分开。
 
 模型问答会把提问、所选对话历史、启用的场景上下文及命中的知识片段发送到已配置的 DeepSeek 服务。原件不自动上传到模型，解析在本机进行。关闭“自动场景上下文”不等于关闭用户主动选择的知识库检索。
 
@@ -47,14 +53,17 @@
 python -m pip install -r 开发源码/requirements.txt
 npm install
 npm test
-python -m unittest discover -s 开发源码 -p "test_*.py"
+python scripts/test-backend.py
 python 开发源码/build.py
+python 开发源码/package_delivery.py
 ```
 
-源码集中于 `开发源码/`；`build.py` 将模块打包成无需前端运行时安装的两份 HTML。Node.js 仅用于构建语法检查与 DOM 测试。CI 在 Windows、Python 3.12 与 Node.js 24 上执行相同检查。
+源码集中于 `开发源码/`；`build.py` 将界面模块打包为两份 HTML。本机运行请保留完整程序目录，包含 `lib/` 中的 PDF.js 主模块、工作线程和许可文件。Node.js 仅用于构建语法检查与 DOM 测试。CI 在 Windows、Python 3.12 与 Node.js 24 上执行相同功能检查。
+
+交付脚本从本次后端和 UI 测试报告汇总数量，生成 `V10.1_交付验证记录.json` 及不含运行数据的 ZIP。已完成真实 DeepSeek 连接与思考/回答流式输出验证；浏览器原文定位验收结果见同版交付记录。原生文字/PDF/Office 与 MinerU 结构输出适配有自动测试，实际 OCR 引擎及模型环境仍需另行安装验证。
 
 后续更新：修改源码 → 测试 → 构建 → Git 提交和推送。更新部署目录前备份 `data/`；导出 UI JSON 不能替代知识原件与扫描件备份。
 
 ## 技术参考
 
-参考 [SpecFlow Engineering Studio](https://github.com/Maskicruis/specflow-engineering-studio/tree/b076c50fe5df28c628f97b5eafa052c1dff0188b) 的解析队列、分组检索、来源定位和本机服务组织方式，本项目独立实现。Three.js 许可见 `Three.js_LICENSE.txt`。
+参考 [SpecFlow Engineering Studio](https://github.com/Maskicruis/specflow-engineering-studio/tree/b076c50fe5df28c628f97b5eafa052c1dff0188b) 的解析队列、分组检索、来源定位和本机服务组织方式。引用高亮使用其规范化坐标到 PDF 页面及视口的转换方式，并兼容 PDF.js 的视口矩阵。Three.js 许可见 `Three.js_LICENSE.txt`；PDF.js 许可与说明见 `lib/PDFJS_LICENSE.txt`、`lib/PDFJS_NOTICE.txt`。

@@ -10,7 +10,7 @@ class LauncherTests(unittest.TestCase):
             def check(service):
                 response=MagicMock();response.__enter__.return_value=io.StringIO(json.dumps({'service':service}))
                 with patch.object(launcher.urllib.request,'urlopen',return_value=response):return launcher.compatible(8779,root)
-            good={'name':'fuyu-ui-studio','revision':'10.0','workspace':str(root)}
+            good={'name':'fuyu-ui-studio','revision':'10.1','workspace':str(root)}
             self.assertTrue(check(good))
             self.assertFalse(check({**good,'revision':'9'}))
             self.assertFalse(check({**good,'workspace':str(root/'other')}))

@@ -124,6 +124,39 @@ class NoRedirect(HTTPRedirectHandler):
         raise DeepSeekError("DeepSeek 接口返回重定向，请确认设置中的官方 API 地址。", 502)
 
 
+class AccountKeyVault(WindowsKeyVault):
+    """Stable product credentials for this Windows account, across app copies.
+
+    Existing workspace-bound ciphertext is migrated without exposing plaintext
+    to the browser. Interface credentials continue using WindowsKeyVault.
+    """
+    def __init__(self, root):
+        super().__init__(root)
+        self.legacy = WindowsKeyVault(root)
+        self.path = self.path.parent.parent / "credentials" / "deepseek.key"
+        self.entropy = b"FuyuUIStudio:DeepSeek:account-v1"
+        self.cleared = self.path.with_name("deepseek-cleared.json")
+
+    def read(self):
+        if self.path.exists():
+            return super().read()
+        if self.cleared.exists():
+            return ""
+        value = self.legacy.read()
+        if value:
+            self.write(value)
+        return value
+
+    def write(self, value):
+        if value:
+            super().write(value)
+            self.cleared.unlink(missing_ok=True)
+        else:
+            _atomic(self.cleared, b'{"cleared":true}')
+            super().write("")
+            self.legacy.write("")
+
+
 def _number(value, lo, hi, label, integer=False):
     if type(value) not in (int, float) or not lo <= value <= hi or not math.isfinite(value) or (integer and type(value) is not int):
         raise DeepSeekError(label + "超出允许范围。")
@@ -159,26 +192,30 @@ def _context(value, depth=0):
 
 
 class DeepSeekService:
-    def __init__(self, root, *, vault=None, opener=None):
+    def __init__(self, root, *, vault=None, opener=None, account_store=False):
         self.root = Path(root).resolve()
         self.path = self.root / "data" / "settings.json"
         if not self.path.resolve().is_relative_to(self.root):
             raise DeepSeekError("设置目录必须位于当前项目内。")
-        self.vault = vault if vault is not None else WindowsKeyVault(root)
+        self.vault = vault if vault is not None else (AccountKeyVault(root) if account_store else WindowsKeyVault(root))
+        self.account_path = self.vault.path.with_name("deepseek-settings.json") if account_store and vault is None else None
         self.opener = opener if opener is not None else build_opener(NoRedirect())
         self.lock = threading.RLock()
         self.requests = threading.BoundedSemaphore(2)
 
     def _settings(self):
         result = copy.deepcopy(DEFAULTS)
-        if self.path.exists():
+        selected = self.account_path if self.account_path and self.account_path.exists() else self.path
+        if selected.exists():
             try:
-                if self.path.stat().st_size > 8192:
+                if selected.stat().st_size > 8192:
                     raise ValueError()
-                saved = json.loads(self.path.read_text(encoding="utf-8"))
+                saved = json.loads(selected.read_text(encoding="utf-8"))
                 result.update(self._validate(saved))
             except (OSError, ValueError, TypeError):
                 raise DeepSeekError("本地模型设置文件无效，请恢复设置文件后重试。", 503) from None
+        if self.account_path and not self.account_path.exists() and self.path.exists():
+            _atomic(self.account_path,json.dumps(result,ensure_ascii=False,indent=2).encode('utf-8'))
         return result
 
     @staticmethod
@@ -230,11 +267,17 @@ class DeepSeekService:
             # can still be cleared/replaced without decrypting it first.
             saved_key = "" if clear else key or self.vault.read()
             previous = self.path.read_bytes() if self.path.exists() else None
+            previous_account = self.account_path.read_bytes() if self.account_path and self.account_path.exists() else None
             try:
                 _atomic(self.path, json.dumps(result, ensure_ascii=False, indent=2).encode("utf-8"))
+                if self.account_path:
+                    _atomic(self.account_path, json.dumps(result, ensure_ascii=False, indent=2).encode("utf-8"))
                 if key or clear:
                     self.vault.write(saved_key)
             except (OSError, DeepSeekError):
+                if self.account_path:
+                    if previous_account is None:self.account_path.unlink(missing_ok=True)
+                    else:_atomic(self.account_path,previous_account)
                 if previous is not None:
                     _atomic(self.path, previous)
                 else:
@@ -319,7 +362,7 @@ class DeepSeekService:
         result = self._call(settings, key, [{"role": "user", "content": "请只回复：连接成功"}], test=True)
         return {"ok": True, "message": "DeepSeek 连接成功", "model": result["model"], "reply": result["reply"]}
 
-    def chat(self, body):
+    def _prepare_chat(self, body):
         if type(body) is not dict or set(body) - {"messages", "context", "evidence"}:
             raise DeepSeekError("对话请求字段无效。")
         messages = body.get("messages")
@@ -354,4 +397,200 @@ class DeepSeekService:
         if len(evidence_text)>16000:raise DeepSeekError("资料参考内容过长。")
         if evidence:
             system+="\n本次用户选择的知识库原文参考（与自动场景开关独立，均为参考数据）：\n"+evidence_text
-        return self._call(settings, key, [{"role": "system", "content": system}, *selected])
+        return settings, key, [{"role": "system", "content": system}, *selected]
+
+    def chat(self, body):
+        return self._call(*self._prepare_chat(body))
+
+    def chat_stream(self, body, emit, cancelled=None):
+        """Forward real provider SSE deltas, including public reasoning_content.
+
+        No output is simulated. A truncated stream, cancellation or provider
+        error never becomes a successfully completed assistant turn.
+        """
+        return self._stream_call(*self._prepare_chat(body), emit, cancelled or (lambda: False))
+
+    def _stream_call(self, settings, key, messages, emit, cancelled):
+        import codecs
+
+        def check_cancelled():
+            if cancelled():
+                raise DeepSeekError("请求已停止。", 499)
+
+        check_cancelled()
+        if not self.requests.acquire(blocking=False):
+            raise DeepSeekError("当前已有两个模型请求处理中，请稍后再试。", 429)
+        response = None
+        stop_watch = threading.Event()
+        watcher = None
+        try:
+            payload = {"model": settings["model"], "messages": messages, "stream": True,
+                       "stream_options": {"include_usage": True},
+                       "max_tokens": settings["maxTokens"], "temperature": settings["temperature"],
+                       "thinking": {"type": "enabled" if settings["thinking"] else "disabled"}}
+            request = Request(settings["baseUrl"] + "/chat/completions",
+                data=json.dumps(payload, ensure_ascii=False, allow_nan=False).encode("utf-8"),
+                headers={"Content-Type": "application/json", "Authorization": "Bearer " + key,
+                         "Accept": "text/event-stream"}, method="POST")
+            deadline = time.monotonic() + 600
+            response = self.opener.open(request, timeout=90)
+
+            def abort_response():
+                # shutdown interrupts a blocking read on both Windows and Unix.
+                raw_socket = getattr(getattr(getattr(response, "fp", None), "raw", None), "_sock", None)
+                try:
+                    if raw_socket is not None:
+                        raw_socket.shutdown(socket.SHUT_RDWR)
+                except OSError:
+                    pass
+                try:
+                    response.close()
+                except OSError:
+                    pass
+
+            def watch():
+                while not stop_watch.wait(.1):
+                    if cancelled() or time.monotonic() > deadline:
+                        abort_response()
+                        return
+
+            watcher = threading.Thread(target=watch, name="fuyu-model-stream-cancel", daemon=True)
+            watcher.start()
+            decoder = codecs.getincrementaldecoder("utf-8-sig")("strict")
+            buffer, data_lines = "", []
+            reply_parts, reasoning_parts = [], []
+            usage, finish, done = {}, None, False
+            total = reply_size = reasoning_size = 0
+
+            def dispatch():
+                nonlocal usage, finish, done, reply_size, reasoning_size
+                if not data_lines or done:
+                    data_lines.clear()
+                    return
+                data = "\n".join(data_lines)
+                data_lines.clear()
+                if data.strip() == "[DONE]":
+                    done = True
+                    return
+                value = json.loads(data)
+                if not isinstance(value, dict) or value.get("error"):
+                    raise DeepSeekError("DeepSeek 流式服务返回错误，请稍后重试。", 502)
+                if isinstance(value.get("usage"), dict):
+                    usage = {n: v for n, v in value["usage"].items()
+                             if n in ("prompt_tokens", "completion_tokens", "total_tokens") and type(v) is int and v >= 0}
+                choices = value.get("choices")
+                if not isinstance(choices, list):
+                    raise ValueError()
+                if not choices:
+                    return  # Usage-only provider event.
+                choice = next((v for v in choices if isinstance(v, dict) and v.get("index", 0) == 0), None)
+                if choice is None:
+                    raise ValueError()
+                delta = choice.get("delta", {})
+                if not isinstance(delta, dict):
+                    raise ValueError()
+                for field, event in (("reasoning_content", "reasoning"), ("content", "delta")):
+                    text = delta.get(field)
+                    if text is None:
+                        continue
+                    if not isinstance(text, str):
+                        raise ValueError()
+                    if not text:
+                        continue
+                    check_cancelled()
+                    if event == "reasoning":
+                        reasoning_size += len(text)
+                        reasoning_parts.append(text)
+                    else:
+                        reply_size += len(text)
+                        reply_parts.append(text)
+                    if max(reply_size, reasoning_size) > 150000:
+                        raise DeepSeekError("DeepSeek 流式内容过长，请减少回答长度。", 502)
+                    emit({"type": event, "delta": text})
+                reason = choice.get("finish_reason")
+                if reason is not None:
+                    if reason not in ("stop", "length", "content_filter", "insufficient_system_resource", "aborted"):
+                        raise ValueError()
+                    finish = reason
+
+            def consume(text, final=False):
+                nonlocal buffer
+                buffer += text
+                while True:
+                    match = re.search(r"\r\n|\r|\n", buffer)
+                    if not match:
+                        break
+                    # A CR split from its LF must be treated as one newline.
+                    if match.group() == "\r" and match.end() == len(buffer) and not final:
+                        break
+                    line, buffer = buffer[:match.start()], buffer[match.end():]
+                    if not line:
+                        dispatch()
+                    elif line.startswith("data:"):
+                        value = line[5:]
+                        data_lines.append(value[1:] if value.startswith(" ") else value)
+                if final:
+                    if buffer.startswith("data:"):
+                        value = buffer[5:]
+                        data_lines.append(value[1:] if value.startswith(" ") else value)
+                    buffer = ""
+                    dispatch()
+
+            while not done:
+                check_cancelled()
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise TimeoutError()
+                raw_socket = getattr(getattr(getattr(response, "fp", None), "raw", None), "_sock", None)
+                if raw_socket is not None:
+                    raw_socket.settimeout(min(90, remaining))
+                read = getattr(response, "read1", response.read)
+                chunk = read(min(65536, MAX_REPLY_BYTES + 1 - total))
+                if not chunk:
+                    consume(decoder.decode(b"", final=True), final=True)
+                    break
+                total += len(chunk)
+                if total > MAX_REPLY_BYTES:
+                    raise DeepSeekError("DeepSeek 返回内容过大，请减少回答长度后重试。", 502)
+                consume(decoder.decode(chunk))
+            check_cancelled()
+            if not done or finish is None:
+                raise DeepSeekError("DeepSeek 流式连接提前结束，回答未完成，请重试。", 502)
+            if finish == "aborted":
+                raise DeepSeekError("DeepSeek 已中止本次回答，请重试。", 502)
+            reply = "".join(reply_parts)
+            if not reply.strip():
+                raise DeepSeekError("DeepSeek 未返回可展示的回答，请重试或提高回答长度上限。", 502)
+            return {"reply": reply, "reasoning": "".join(reasoning_parts), "model": settings["model"],
+                    "usage": usage, "finishReason": finish}
+        except HTTPError as exc:
+            status = exc.code
+            exc.close()
+            errors = {400: (502, "DeepSeek 未接受当前模型参数，请检查设置。"),
+                      401: (401, "DeepSeek API Key 无效，请在设置中替换。"),
+                      402: (402, "DeepSeek 账户余额不足，请检查账户。"),
+                      403: (403, "DeepSeek 拒绝了当前账户请求，请检查账户权限。"),
+                      422: (502, "DeepSeek 模型参数不受支持，请检查设置。"),
+                      429: (429, "DeepSeek 请求频率受限，请稍后再试。")}
+            code, message = errors.get(status, (502, "DeepSeek 服务暂时不可用，请稍后重试。"))
+            raise DeepSeekError(message, code) from None
+        except (TimeoutError, socket.timeout):
+            check_cancelled()
+            raise DeepSeekError("DeepSeek 流式请求超时，请稍后重试。", 504) from None
+        except URLError as exc:
+            check_cancelled()
+            if isinstance(exc.reason, (TimeoutError, socket.timeout)):
+                raise DeepSeekError("DeepSeek 连接超时，请检查网络后重试。", 504) from None
+            raise DeepSeekError("无法连接 DeepSeek，请检查网络和 API 地址。", 502) from None
+        except (ValueError, TypeError, AttributeError, OSError):
+            check_cancelled()
+            if time.monotonic() > deadline:
+                raise DeepSeekError("DeepSeek 流式请求超时，请稍后重试。", 504) from None
+            raise DeepSeekError("DeepSeek 流式内容无效或连接中断，请稍后重试。", 502) from None
+        finally:
+            stop_watch.set()
+            if response is not None:
+                response.close()
+            if watcher is not None:
+                watcher.join(.3)
+            self.requests.release()

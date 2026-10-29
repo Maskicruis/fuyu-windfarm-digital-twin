@@ -124,7 +124,7 @@ class ServerTests(unittest.TestCase):
         (cls.root / "admin.html").write_text("<!doctype html><title>Admin</title>", encoding="utf-8")
         (cls.root / "开发源码").mkdir()
         (cls.root / "开发源码" / "secret.py").write_text("secret", encoding="utf-8")
-        cls.httpd = server.FuyuServer(("127.0.0.1", 0), cls.root)
+        cls.httpd = server.FuyuServer(("127.0.0.1", 0), cls.root, persistent_credentials=False)
         cls.httpd.RequestHandlerClass = QuietHandler
         cls.port = cls.httpd.server_port
         cls.thread = threading.Thread(target=cls.httpd.serve_forever, daemon=True)
@@ -163,7 +163,7 @@ class ServerTests(unittest.TestCase):
         status, raw, _ = self.request()
         self.assertEqual(status, 200)
         state = json.loads(raw)
-        self.assertEqual(state["service"], {"name": "fuyu-ui-studio", "revision": "10.0", "workspace": str(self.root.resolve())})
+        self.assertEqual(state["service"], {"name": "fuyu-ui-studio", "revision": "10.1", "workspace": str(self.root.resolve())})
         stored = self.httpd.store.state()
         self.assertEqual(set(stored), {"draft", "published", "versions"})
         self.assertEqual({k: state[k] for k in stored}, stored)
@@ -255,7 +255,7 @@ class ScanDocumentTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(prefix="fuyu-v91-scans-")
         self.root = Path(self.temp.name)
         (self.root / "frontend.html").write_text('<script id="fuyu-display-config" type="application/json">{"version":2,"profiles":{}}</script>', encoding="utf-8")
-        self.httpd = server.FuyuServer(("127.0.0.1", 0), self.root)
+        self.httpd = server.FuyuServer(("127.0.0.1", 0), self.root, persistent_credentials=False)
         self.httpd.RequestHandlerClass = QuietHandler
         self.port = self.httpd.server_port
         self.thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)

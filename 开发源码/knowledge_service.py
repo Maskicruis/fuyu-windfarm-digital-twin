@@ -305,7 +305,7 @@ class KnowledgeStore:
 
     def _public(self, row):
         d = dict(row)
-        d.pop('jobVersion',None)
+        d['citationVersion']=d.pop('jobVersion',None)
         d['archived'] = bool(d['archived'])
         d['parseStatus'] = d['status']
         if d['archived']: d['status'] = 'archived'
@@ -410,12 +410,64 @@ class KnowledgeStore:
             rows=self.db.execute('SELECT * FROM chunks WHERE documentId=?'+extra+' ORDER BY ordinal',params).fetchall()
         return {'document':document,'chunks':[self._chunk(row,document) for row in rows],'pages':document['pages']}
 
+    def resolve_citation(self, document_id, item_id=None, page=None, version=None):
+        """Resolve an exact source anchor; stale or conflicting references fail closed.
+
+        Page-only browsing has no selected item. It never substitutes the first
+        page block for an unknown citation, and never trusts a caller's text/bbox.
+        """
+        page_value=None
+        if page not in (None,''):
+            if type(page) not in (str,int) or type(page) is bool:raise KnowledgeError('引用页码无效')
+            try:page_value=int(page)
+            except (ValueError,TypeError):raise KnowledgeError('引用页码无效')
+            if str(page_value)!=str(page) or not 1<=page_value<=10000:raise KnowledgeError('引用页码无效')
+        with self.lock:
+            row=self._row(document_id)
+            document=self._public(row)
+            if page_value and document['mime']=='application/pdf' and document.get('pages') and page_value>document['pages']:
+                raise KnowledgeError('引用页码超出原件实际页数，请重新检索或解析资料',409)
+            if page_value and document['mime'] not in ('application/pdf','image/png','image/jpeg','image/webp'):
+                raise KnowledgeError('该资料没有真实页码，请按内容块定位',409)
+            item=None
+            if item_id not in (None,''):
+                item_id=text(item_id,160,'引用内容块',empty=False)
+                if version in (None,''):
+                    raise KnowledgeError('历史引用缺少解析版本，请重新检索生成有效引用',409)
+                if type(version) not in (str,int) or type(version) is bool:raise KnowledgeError('引用版本无效')
+                try:version_value=int(version)
+                except (ValueError,TypeError):raise KnowledgeError('引用版本无效')
+                if str(version_value)!=str(version) or version_value<1:raise KnowledgeError('引用版本无效')
+                if version_value!=row['jobVersion'] or row['status']!='ready':
+                    raise KnowledgeError('资料已重新解析或正在解析，旧引用已失效；请重新检索',409)
+                anchor=self.db.execute('SELECT * FROM chunks WHERE documentId=? AND id=?',(document_id,item_id)).fetchone()
+                if not anchor:raise KnowledgeError('引用内容块不属于此资料或已失效，请重新检索',409)
+                if page_value is not None and anchor['page']!=page_value:
+                    raise KnowledgeError('引用页码与内容块不一致，已阻止跳转到其他内容',409)
+                item=self._chunk(anchor,document)
+                page_value=anchor['page']
+            if page_value is None and document['mime']=='application/pdf':page_value=1
+            if page_value is None:
+                chunks=self.db.execute('SELECT * FROM chunks WHERE documentId=? ORDER BY ordinal',(document_id,)).fetchall()
+            else:
+                chunks=self.db.execute('SELECT * FROM chunks WHERE documentId=? AND page=? ORDER BY ordinal',(document_id,page_value)).fetchall()
+            return {'document':document,'item':item,'chunks':[self._chunk(c,document) for c in chunks],
+                    'page':page_value,'citationVersion':row['jobVersion'],
+                    'locate':{'docId':document_id,'page':page_value,'itemId':item['id'] if item else None,
+                              'bboxNormalized':item['bboxNormalized'] if item else None},
+                    'sourceUrl':document['sourceUrl']}
+
     def _chunk(self, row, document):
         result=dict(row)
         result['bboxNormalized']=json.loads(result.pop('bbox')) if result['bbox'] else None
-        result['bbox']=result['bboxNormalized']
+        result['bbox']=None
+        result['parserItemId']=result.get('itemId')
+        result['itemId']=result['id']
+        result['docId']=result['documentId']
+        result['citationVersion']=document.get('citationVersion',result.get('citationVersion'))
         result.update({'label':document['label'],'title':document['label'],'unit':document['unit'],'objectId':document['objectId'],
                        'process':document['process'],'sourceUrl':document['sourceUrl']+(('#page='+str(result['page'])) if result['page'] else '')})
+        result['locate']={'docId':result['documentId'],'page':result['page'],'itemId':result['id'],'bboxNormalized':result['bboxNormalized']}
         return result
 
     def update_document(self, document_id, body):
@@ -458,7 +510,7 @@ class KnowledgeStore:
         clauses,params=self._scope(body)
         clauses.append("d.status='ready'")
         with self.lock:
-            rows=self.db.execute('SELECT c.*,d.label,d.filename,d.unit,d.objectId,d.process,d.groupId FROM chunks c JOIN documents d ON c.documentId=d.id WHERE '+' AND '.join(clauses)+' ORDER BY d.id,c.ordinal LIMIT 40000',params).fetchall()
+            rows=self.db.execute('SELECT c.*,d.label,d.filename,d.unit,d.objectId,d.process,d.groupId,d.jobVersion AS citationVersion FROM chunks c JOIN documents d ON c.documentId=d.id WHERE '+' AND '.join(clauses)+' ORDER BY d.id,c.ordinal LIMIT 40000',params).fetchall()
         if not rows or not terms: return {'hits':[],'query':question,'total':0,'retrieval':'bm25','scope':{k:v for k,v in body.items() if k!='query'}}
         counters=[Counter(tokens(r['text'])) for r in rows]
         average=sum(sum(c.values()) for c in counters)/len(counters) or 1
@@ -510,7 +562,7 @@ class KnowledgeStore:
                 self.db.execute('DELETE FROM chunks WHERE documentId=?',(document_id,))
                 for i,chunk in enumerate(chunks):
                     self.db.execute('INSERT INTO chunks(id,documentId,ordinal,page,locator,text,bbox,itemId,type) VALUES(?,?,?,?,?,?,?,?,?)',
-                      (document_id+'-'+str(i),document_id,i,chunk.get('page'),chunk['locator'],chunk['text'],json.dumps(chunk.get('bboxNormalized')) if chunk.get('bboxNormalized') else None,chunk.get('itemId',str(i)),chunk.get('type','text')))
+                      (document_id+'-v'+str(version)+'-'+str(i),document_id,i,chunk.get('page'),chunk['locator'],chunk['text'],json.dumps(chunk.get('bboxNormalized')) if chunk.get('bboxNormalized') else None,chunk.get('itemId',str(i)),chunk.get('type','text')))
                 self.db.execute("UPDATE documents SET status='ready',error='',pages=?,chunkCount=?,engine=?,parsedAt=?,updatedAt=? WHERE id=?",(pages,len(chunks),engine,stamp(),stamp(),document_id))
         except Exception as exc:
             status='needs_engine' if isinstance(exc,EngineNeeded) else 'failed'

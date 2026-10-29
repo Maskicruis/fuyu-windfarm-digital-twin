@@ -242,7 +242,7 @@ class DeepSeekHTTPTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="fuyu-deepseek-http-")
         self.root = Path(self.temp.name)
-        self.httpd = server.FuyuServer(("127.0.0.1", 0), self.root)
+        self.httpd = server.FuyuServer(("127.0.0.1", 0), self.root, persistent_credentials=False)
         self.httpd.RequestHandlerClass = QuietHandler
         self.opener = RecordingOpener()
         self.httpd.deepseek = ai.DeepSeekService(self.root, vault=MemoryVault(), opener=self.opener)
@@ -283,7 +283,7 @@ class DeepSeekHTTPTests(unittest.TestCase):
             self.assertNotIn(TEST_KEY.encode(), raw)
             self.assertNotIn(b"keyHint", raw)
         state = json.loads(self.request("GET", "/api/state")[1])
-        self.assertEqual(state["service"]["revision"], "10.0")
+        self.assertEqual(state["service"]["revision"], "10.1")
 
     def test_missing_key_validation_unknown_route_and_wrong_method(self):
         self.assertEqual(self.request("POST", "/api/chat", {"messages": messages()})[0], 409)
