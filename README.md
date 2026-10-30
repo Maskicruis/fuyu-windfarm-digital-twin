@@ -2,6 +2,12 @@
 
 当前交付在 G:\中车扶余数字孪生\00工作区。源码以本目录为准，GitHub 仓库为 https://github.com/Maskicruis/fuyu-windfarm-digital-twin ，沿用原有私有权限。
 
+## 下载与快速启动
+
+[打开 V0.9.2 发布页（EXE 附件）](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/v0.9.2) · [快速入门指南](docs/QUICK-START-zh-CN.md) · [图标预览](lib/brand/fuyu-crrc-wind.png)
+
+发布页 Assets 提供主程序 EXE、独立知识组件 EXE、图标与离线指南。普通使用直接下载 EXE 即可。
+
 ## 两项交付
 
 1. `../扶余一号数字孪生/扶余一号数字孪生.exe`：展示前端、拖拽控制后台、设置、悬浮智能体及现有三维场景。
