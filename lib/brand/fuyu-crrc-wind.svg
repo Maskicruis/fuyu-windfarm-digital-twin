@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+ <defs><linearGradient id="bg" x2=".8" y2="1"><stop stop-color="#084968"/><stop offset="1" stop-color="#00192e"/></linearGradient><linearGradient id="wind" x2="1" y2="1"><stop stop-color="#f5ffff"/><stop offset="1" stop-color="#53dff7"/></linearGradient></defs>
+ <rect x="5" y="5" width="246" height="246" rx="48" fill="url(#bg)" stroke="#2183a2" stroke-width="3"/>
+ <path d="M34 172C43 203 72 226 106 231M151 231C182 227 210 209 223 181" fill="none" stroke="#05cddd" stroke-width="7" stroke-linecap="round"/>
+ <path d="M36 151C40 175 56 196 74 206M191 207C208 193 218 175 221 155" fill="none" stroke="#27829f" stroke-width="3" stroke-linecap="round"/>
+ <path d="M122 144L118 219H139L133 144Z" fill="#d8faff"/>
+ <path d="M107 222H150" stroke="#9befff" stroke-width="6" stroke-linecap="round"/>
+ <path d="M126 132L120 94Q125 83 132 79L136 126L131 137Z" fill="url(#wind)"/>
+ <path d="M135 136L169 153Q183 164 188 176L146 157L128 141Z" fill="url(#wind)"/>
+ <path d="M124 143L89 171Q77 177 65 176L101 145L125 134Z" fill="url(#wind)"/>
+ <circle cx="128" cy="137" r="10" fill="#f0ffff" stroke="#3ccde6" stroke-width="3"/>
+ <rect x="37" y="27" width="182" height="48" rx="12" fill="#e3293b"/>
+ <text x="128" y="62" text-anchor="middle" font-family="Arial, sans-serif" font-size="36" font-weight="800" letter-spacing="3" fill="#ffffff">CRRC</text>
+</svg>

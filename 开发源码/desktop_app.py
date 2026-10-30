@@ -112,6 +112,9 @@ def main(argv=None):
             while True:
                 time.sleep(.5)
         try:
+            if os.name=='nt':
+                import ctypes
+                ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('CRRC.Fuyu.DigitalTwin')
             import webview
             window = webview.create_window('扶余一号 · 数字孪生' if not args.plugin_only else '知识与智能体组件',
                                   url, width=1600 if not args.plugin_only else 1000, height=940,
@@ -121,7 +124,7 @@ def main(argv=None):
                 service.updater.target=Path(sys.executable).resolve()
                 service.updater.port=port
                 service.updater.exit_callback=window.destroy
-            webview.start(gui='edgechromium', private_mode=False,
+            webview.start(gui='edgechromium', private_mode=False,icon=str(asset_root()/'lib/brand/fuyu-crrc-wind.ico'),
                           storage_path=str(workspace / 'webview-profile'))
         except Exception:
             logging.exception('内嵌窗口不可用，已切换浏览器入口')
@@ -130,6 +133,7 @@ def main(argv=None):
             window = tk.Tk()
             window.title('扶余一号 · 数字孪生服务')
             window.geometry('460x250')
+            window.iconbitmap(str(asset_root()/'lib/brand/fuyu-crrc-wind.ico'))
             tk.Label(window, text='扶余一号数字孪生正在运行', font=('Microsoft YaHei', 16)).pack(pady=24)
             tk.Button(window, text='打开系统', command=lambda: webbrowser.open(url), width=26).pack(pady=5)
             tk.Label(window, text='关闭此窗口将停止本机服务。', font=('Microsoft YaHei', 10)).pack(pady=20)

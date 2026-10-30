@@ -22,7 +22,7 @@ def main():
     args.output.mkdir(parents=True, exist_ok=True)
     assets = ['frontend.html', 'admin.html', 'desktop-home.html', 'updater-worker.ps1', 'config', 'lib', 'plugin', 'Three.js_LICENSE.txt']
     command = [sys.executable, '-m', 'PyInstaller', '--noconfirm', '--onefile', '--windowed',
-               '--name', '扶余一号数字孪生', '--distpath', str(args.output), '--workpath', str(work/'build'),
+               '--name', '扶余一号数字孪生', '--icon',str(ROOT/'lib/brand/fuyu-crrc-wind.ico'), '--distpath', str(args.output), '--workpath', str(work/'build'),
                '--specpath', str(work), '--version-file',str(version_file), '--paths', str(ROOT/'开发源码'), '--collect-all', 'webview',
                '--collect-all', 'pythonnet', '--hidden-import', 'pypdf', '--hidden-import', 'tkinter',
                '--exclude-module', 'PyQt5', '--exclude-module', 'PyQt6', '--exclude-module', 'PySide6']
@@ -44,7 +44,7 @@ def main():
               'sha256':hashlib.sha256(executable.read_bytes()).hexdigest(),
               'contains_user_data':False,'bundles_python':True,'embedded_engine':'Microsoft Edge WebView2'}
     (args.output/'构建信息.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),'utf-8')
-    manifest={'schema':'fuyu-desktop-update/v1','product':'fuyu-windfarm-digital-twin','version':version,'notes':'V0.9.1：精简项目总览，增加项目级参数与在线更新。','windows-x64':{'file':'Fuyu-Digital-Twin-'+version+'-x64.exe','size':result['bytes'],'sha256':result['sha256']}}
+    manifest={'schema':'fuyu-desktop-update/v1','product':'fuyu-windfarm-digital-twin','version':version,'notes':'V'+version+'：参考图总览布局；设备动画与视角操作独立；动态指南针；保留装机容量说明。','windows-x64':{'file':'Fuyu-Digital-Twin-'+version+'-x64.exe','size':result['bytes'],'sha256':result['sha256']}}
     (args.output/'fuyu-update.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2),'utf-8')
     print(json.dumps(result,ensure_ascii=False))
 

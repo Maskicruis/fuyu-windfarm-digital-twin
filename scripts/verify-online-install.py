@@ -8,8 +8,10 @@ import time
 import urllib.request
 
 ROOT=Path(__file__).resolve().parent.parent
+VERSION=json.loads((ROOT/'config/app-version.json').read_text('utf-8'))['version']
+NEXT_VERSION='.'.join(VERSION.split('.')[:2]+[str(int(VERSION.split('.')[-1])+1)])
 AREA=ROOT/'开发源码/验收产物/update-worker-proof'
-SOURCE=ROOT/'开发源码/验收产物/v091-build/扶余一号数字孪生.exe'
+SOURCE=ROOT/('开发源码/验收产物/v'+VERSION.replace('.','')+'-build/扶余一号数字孪生.exe')
 TARGET=AREA/'test-application.exe'
 WORK=AREA/'workspace'
 UPDATES=WORK/'data/updates'
@@ -52,8 +54,8 @@ def cycle(expected,port):
     subprocess.run(['taskkill','/PID',str(start.pid),'/T','/F'],capture_output=True)
     for _ in range(150):
         if result.exists():
-            payload=json.loads(result.read_text('utf-8-sig'))
             worker.wait(timeout=10)
+            payload=json.loads(result.read_text('utf-8-sig'))
             assert (WORK/'data/preserved.txt').read_text('utf-8')=='unchanged project data'
             assert hashlib.sha256(TARGET.read_bytes()).hexdigest()==(candidate_hash if payload['status']=='installed' else before)
             wait_health()
@@ -67,9 +69,9 @@ def main():
     UPDATES.mkdir(parents=True,exist_ok=True);shutil.copy2(SOURCE,TARGET)
     (WORK/'data/preserved.txt').write_text('unchanged project data','utf-8')
     try:
-        good=cycle('0.9.1',38891);assert good['status']=='installed',good
+        good=cycle(VERSION,38891);assert good['status']=='installed',good
         print(json.dumps({'actual_replace_restart':good}),flush=True)
-        failed=cycle('0.9.2',38892);assert failed['status']=='rolled_back',failed
+        failed=cycle(NEXT_VERSION,38892);assert failed['status']=='rolled_back',failed
         print(json.dumps({'failed_start_rollback':failed}),flush=True)
         proof={'passed':True,'real_windows_worker':True,'replace_and_restart':True,'startup_failure_rollback':True,
                'workspace_data_preserved':True,'package':hashlib.sha256(SOURCE.read_bytes()).hexdigest()}

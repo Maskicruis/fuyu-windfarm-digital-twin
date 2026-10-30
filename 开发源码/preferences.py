@@ -32,7 +32,7 @@ class Preferences:
         if clean['defaultUnit'] not in ['ALL', 'WT', 'RD', 'CL', 'SS']:
             raise ValueError('默认工程无效')
         overview = clean['overview']
-        if not isinstance(overview, dict) or set(overview) - {'demo', 'summary', 'capacityMW', 'turbines', 'circuits', 'stations', 'actual', 'planned', 'units'}:
+        if not isinstance(overview, dict) or set(overview) - {'demo', 'summary', 'capacityMW', 'turbines', 'circuits', 'stations', 'actual', 'planned', 'units', 'history'}:
             raise ValueError('总览参数无效')
         if 'demo' in overview and not isinstance(overview['demo'], bool):
             raise ValueError('演示状态无效')
@@ -49,6 +49,17 @@ class Preferences:
         for v in units.values():
             if v is not None and (type(v) not in [int,float] or not 0 <= v <= 100):
                 raise ValueError('分项进度超出范围')
+        history=overview.get('history',[])
+        if not isinstance(history,list) or len(history)>60:
+            raise ValueError('进度历史最多登记60个时间点')
+        previous=''
+        for row in history:
+            if not isinstance(row,dict) or set(row)!={'date','actual'} or not isinstance(row['date'],str):
+                raise ValueError('历史进度格式应为日期,百分比')
+            datetime.date.fromisoformat(row['date'])
+            if row['date']<=previous or type(row['actual']) not in [int,float] or not 0<=row['actual']<=100:
+                raise ValueError('历史日期须递增且进度在0至100之间')
+            previous=row['date']
         datetime.date.fromisoformat(clean['dataDate'])
         return clean
 

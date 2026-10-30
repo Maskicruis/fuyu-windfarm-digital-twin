@@ -1,19 +1,18 @@
 {
   "date": "2026-10-30",
   "main": {
-    "version": "0.9.1",
+    "version": "0.9.2",
     "format": "Windows x64 EXE",
-    "sha256": "50895983baaca2c7da30c22556bd3cac2d1ee2ea22bf15060726d925ba54d2f3",
-    "bytes": 20238806,
-    "backend_tests": 153,
+    "sha256": "e4c62b4b39729d63ae1f71338aecaa15046017d8175eb98f66922e79494823c9",
+    "bytes": 20359690,
+    "backend_tests": 154,
     "binary_validation": {
-      "version": "0.9.1",
-      "health": true,
+      "version": "0.9.2",
+      "passed": true,
       "frontend_matches_source": true,
       "backend_matches_source": true,
-      "default_overview": true,
-      "update_status_available": true,
-      "sha256": "50895983baaca2c7da30c22556bd3cac2d1ee2ea22bf15060726d925ba54d2f3"
+      "history_persistence": true,
+      "sha256": "e4c62b4b39729d63ae1f71338aecaa15046017d8175eb98f66922e79494823c9"
     },
     "online_update": {
       "passed": true,
@@ -21,7 +20,7 @@
       "replace_and_restart": true,
       "startup_failure_rollback": true,
       "workspace_data_preserved": true,
-      "package": "50895983baaca2c7da30c22556bd3cac2d1ee2ea22bf15060726d925ba54d2f3"
+      "package": "e4c62b4b39729d63ae1f71338aecaa15046017d8175eb98f66922e79494823c9"
     },
     "data_location": "workspace/data",
     "contains_user_data": false
@@ -44,14 +43,14 @@
     "configured_port_survives_restart": true,
     "provider": "local mock, no real model API call",
     "data_isolation": true,
-    "validated_at": "2026-10-29; unchanged in V0.9.1"
+    "validated_at": "2026-10-29; unchanged in V0.9.2"
   },
   "tests": {
-    "main_backend": 153,
+    "main_backend": 154,
     "specflow_retained": 35,
     "unified_workspace": "four disciplines; no secondary navigation; scoped archive; knowledge entry actions; playback",
     "live_ui": "drag knowledge panel; text content list editable; settings save; all four disciplines",
-    "overview": "Three cards; zero/empty states; project settings; controller text editing verified"
+    "overview": "Reference overview; independent equipment playback; dynamic compass; trend, alerts and footer"
   },
   "parser": {
     "engine": "installed MinerU, original pipeline",

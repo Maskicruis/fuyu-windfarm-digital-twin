@@ -26,7 +26,7 @@ function test(name,fn){try{fn();results.push({name,passed:true});}catch(error){r
 function useFixture(options,fn){const f=fixture(options);try{fn(f);eq(f.errors.length,0,'no DOM exceptions');}finally{f.dom.window.close();}}
 test('play and pause apply motion flag, visual label and accessible state without stepping construction',()=>useFixture({},f=>{
   eq(f.button.getAttribute('aria-pressed'),'false');eq(f.button.querySelector('span').textContent,'播放场景');
-  f.play();eq(f.w.s.overviewPlaying,true);eq(f.w.s.touring,true);eq(f.w.s.simPlaying,false);eq(f.w.unitState.playing,true);
+  f.play();eq(f.w.s.overviewPlaying,true);eq(f.w.s.touring,false);eq(f.w.s.simPlaying,false);eq(f.w.unitState.playing,true);
   eq(f.button.getAttribute('aria-pressed'),'true');eq(f.button.querySelector('use').getAttribute('href'),'#i-pause');ok(f.calls.some(x=>x[0]==='play'&&x[1]===true));
   f.play();eq(f.w.s.overviewPlaying,false);eq(f.w.s.touring,false);eq(f.button.getAttribute('aria-pressed'),'false');eq(f.button.querySelector('span').textContent,'播放场景');ok(f.calls.some(x=>x[0]==='play'&&x[1]===false));
 }));
@@ -36,11 +36,11 @@ test('not-ready, non-overview and editor selection cannot start playback',()=>{
   useFixture({view:'records'},f=>{f.play();eq(f.calls.length,0);});
   useFixture({},f=>{f.d.documentElement.dataset.fuyuEditing='true';f.play();eq(f.calls.length,0);});
 });
-test('starting from 2D returns to 3D and plays project scene',()=>useFixture({view3d:false},f=>{
-  f.play();eq(f.w.s.view3d,true);ok(f.calls.some(x=>x[0]==='refresh'));ok(f.calls.some(x=>x[0]==='sync'));ok(f.calls.some(x=>x[0]==='play'&&x[1]===true));
+test('starting from 2D preserves the chosen view while playing equipment',()=>useFixture({view3d:false},f=>{
+  f.play();eq(f.w.s.view3d,false);eq(f.calls.some(x=>x[0]==='refresh'),false);ok(f.calls.some(x=>x[0]==='sync'));ok(f.calls.some(x=>x[0]==='play'&&x[1]===true));
 }));
-test('manual scene interaction and settings opening pause full-scene motion',()=>useFixture({},f=>{
-  for(const event of ['fuyu-scene-interaction','fuyu-settings-opening']){f.play();f.event(event);eq(f.w.s.overviewPlaying,false);eq(f.button.getAttribute('aria-pressed'),'false');}
+test('manual scene interaction keeps motion running; settings opening pauses it',()=>useFixture({},f=>{
+  f.play();f.event('fuyu-scene-interaction');eq(f.w.s.overviewPlaying,true);f.event('fuyu-settings-opening');eq(f.w.s.overviewPlaying,false);
 }));
 test('stopTour preserves original cleanup and stops scene for scope switching and Escape path',()=>useFixture({},f=>{
   f.play();f.w.stopTour();eq(f.calls.filter(x=>x[0]==='oldStop').length,1);eq(f.w.s.overviewPlaying,false);eq(f.w.unitState.playing,true);eq(f.button.querySelector('span').textContent,'播放场景');
@@ -51,20 +51,20 @@ test('hidden tab and pagehide pause motion without automatic resume',()=>useFixt
   Object.defineProperty(f.d,'hidden',{configurable:true,value:false});f.event('visibilitychange');eq(f.w.s.overviewPlaying,false);
   f.play();f.event('pagehide',f.w);eq(f.w.s.overviewPlaying,false);
 }));
-test('manual 2D, 3D, reset and zoom controls pause playback while keeping original action',()=>useFixture({},f=>{
-  for(const id of ['view-2d','view-3d','home-view','zoom-in','zoom-out']){f.play();f.click(id);eq(f.w.s.overviewPlaying,false,id+' pauses playback');ok(f.calls.some(x=>x[0]==='original'&&x[1]===id),id+' retains original action');}
+test('manual 2D, 3D, reset and zoom retain motion and original action',()=>useFixture({},f=>{
+  for(const id of ['view-2d','view-3d','home-view','zoom-in','zoom-out']){if(!f.w.s.overviewPlaying)f.play();f.click(id);eq(f.w.s.overviewPlaying,true,id+' retains playback');ok(f.calls.some(x=>x[0]==='original'&&x[1]===id),id+' retains original action');}
 }));
-test('scene API toggles OrbitControls and rotors, cancels previous tween and clears busy state',()=>{
+test('scene API toggles only rotors without moving camera or cancelling view transitions',()=>{
   const match=base.match(/function setOverviewPlayback\(enabled\)\{[\s\S]*?\n\}/);ok(match,'explicit public scene API exists');
   const attrs={},sandbox={Me:{autoRotate:false,autoRotateSpeed:0},fe:{domElement:{setAttribute:(k,v)=>attrs[k]=v}},gn:{start:1},rh:false};vm.createContext(sandbox);vm.runInContext(match[0],sandbox);
-  eq(sandbox.setOverviewPlayback(true),true);eq(sandbox.Me.autoRotate,true);ok(sandbox.Me.autoRotateSpeed>0);eq(sandbox.rh,true);ok(sandbox.gn,'start retains pending 2D-to-3D transition');eq(attrs['data-overview-playing'],'true');
-  eq(sandbox.setOverviewPlayback(false),true);eq(sandbox.Me.autoRotate,false);eq(sandbox.rh,false);eq(attrs['data-overview-playing'],'false');eq(sandbox.gn,null);eq(attrs['aria-busy'],'false');
+  eq(sandbox.setOverviewPlayback(true),true);eq(sandbox.Me.autoRotate,false);eq(sandbox.Me.autoRotateSpeed,0);eq(sandbox.rh,true);ok(sandbox.gn,'start retains pending 2D-to-3D transition');eq(attrs['data-overview-playing'],'true');
+  eq(sandbox.setOverviewPlayback(false),true);eq(sandbox.Me.autoRotate,false);eq(sandbox.rh,false);eq(attrs['data-overview-playing'],'false');ok(sandbox.gn,'pause also preserves view transition');eq(attrs['aria-busy'],undefined);
   sandbox.Me=null;eq(sandbox.setOverviewPlayback(true),false);
 });
-test('base scope changes and Escape use wrapped stop, and scene user-control start signals pause',()=>{
+test('base scope changes and Escape use wrapped stop, and scene user-control start signals interaction independently',()=>{
   for(const functionName of ['selectAsset','selectScope','openUnitWorkspace']){const start=base.indexOf('function '+functionName+'(');ok(start>=0,functionName);const body=base.slice(start,base.indexOf('\n',start));ok(body.includes('stopTour()'),functionName+' stops overview motion');}
   const init=base.slice(base.indexOf('function initializeUI()'),base.indexOf('function renderMap(){v6MapBridge();}'));ok(/e\.key==='Escape'[\s\S]*?stopTour\(\)/.test(init),'Escape stops tour');
-  ok(base.includes('Me.addEventListener("start",()=>{document.dispatchEvent(new CustomEvent("fuyu-scene-interaction"))'),'controls drag/wheel start dispatches pause');
+  ok(base.includes('Me.addEventListener("start",()=>{document.dispatchEvent(new CustomEvent("fuyu-scene-interaction"))'),'controls drag/wheel dispatches an independent interaction event');
   ok(base.includes("s.overviewPlaying||s.simPlaying"),'overview motion is considered by model sync');
 });
 const report={passed:results.every(x=>x.passed),groups:results.length,assertions,results};

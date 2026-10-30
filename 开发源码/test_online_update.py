@@ -18,7 +18,7 @@ class Vault:
 class OnlineUpdateTests(unittest.TestCase):
     def setUp(self):
         self.tmp=tempfile.TemporaryDirectory();self.root=Path(self.tmp.name)
-        self.service=UpdateService(self.root,self.root,vault=Vault(self.root))
+        self.service=UpdateService(self.root,self.root,vault=Vault(self.root),current='0.9.1')
         self.exe=b'MZ'+b'a'*2046
         self.manifest={'schema':'fuyu-desktop-update/v1','product':'fuyu-windfarm-digital-twin','version':'0.9.2',
             'windows-x64':{'file':'fuyu-0.9.2.exe','sha256':hashlib.sha256(self.exe).hexdigest(),'size':len(self.exe)}}

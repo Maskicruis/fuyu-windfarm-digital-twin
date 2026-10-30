@@ -41,3 +41,13 @@ class PreferencesTests(unittest.TestCase):
             for bad in [{'actual':101},{'units':{'WT':-1}},{'demo':'false'},{'token':'secret'}]:
                 with self.assertRaises(ValueError):store.update({'overview':bad})
                 self.assertEqual(store.get()['overview'],overview)
+
+    def test_progress_history_is_persistent_ordered_and_bounded(self):
+        with tempfile.TemporaryDirectory() as root:
+            store=Preferences(root)
+            history=[{'date':'2026-10-01','actual':0},{'date':'2026-10-30','actual':64}]
+            store.update({'overview':{'demo':False,'history':history}})
+            self.assertEqual(Preferences(root).get()['overview']['history'],history)
+            for invalid in [history[::-1],history+[history[-1]], [{'date':'2026-02-30','actual':10}], [{'date':'2026-10-30','actual':101}], 'untrusted']:
+                with self.assertRaises((ValueError,TypeError)):store.update({'overview':{'history':invalid}})
+                self.assertEqual(store.get()['overview']['history'],history)
