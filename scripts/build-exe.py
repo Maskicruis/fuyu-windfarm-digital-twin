@@ -44,7 +44,7 @@ def main():
               'sha256':hashlib.sha256(executable.read_bytes()).hexdigest(),
               'contains_user_data':False,'bundles_python':True,'embedded_engine':'Microsoft Edge WebView2'}
     (args.output/'构建信息.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),'utf-8')
-    manifest={'schema':'fuyu-desktop-update/v1','product':'fuyu-windfarm-digital-twin','version':version,'notes':'V'+version+'：总览布局与悬停施工阶段；半透明面板；四专业动态指北针；公开仓库免授权在线更新。','windows-x64':{'file':'Fuyu-Digital-Twin-'+version+'-x64.exe','size':result['bytes'],'sha256':result['sha256']}}
+    manifest={'schema':'fuyu-desktop-update/v1','product':'fuyu-windfarm-digital-twin','version':version,'notes':'V'+version+'：修复四专业进度区域整块悬停；含图标、名称、进度条、百分比与留白；移开自动收起。','windows-x64':{'file':'Fuyu-Digital-Twin-'+version+'-x64.exe','size':result['bytes'],'sha256':result['sha256']}}
     (args.output/'fuyu-update.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2),'utf-8')
     print(json.dumps(result,ensure_ascii=False))
 

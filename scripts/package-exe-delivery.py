@@ -1,6 +1,7 @@
 """Refresh delivery documentation only after the exact executable has passed validation."""
 from pathlib import Path
 import hashlib,json,shutil
+from datetime import datetime,timedelta,timezone
 ROOT=Path(__file__).resolve().parent.parent
 DELIVERY=ROOT.parent/'扶余一号数字孪生'
 def main():
@@ -21,8 +22,8 @@ def main():
             'data_location':'workspace/data','contains_user_data':False}
     (DELIVERY/'交付验证记录.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),'utf-8')
     source=json.loads((ROOT/'开发源码/交付验证记录.json').read_text('utf-8'))
-    source['date']='2026-10-30';source['main']=report;source['tests']['main_backend']=backend['tests']
-    source['tests']['overview']='Reference overview; top project parameters; four scoped hover phase tooltips; transparent panels; four unit compasses; public credential-free updater'
+    source['date']=datetime.now(timezone(timedelta(hours=8))).date().isoformat();source['main']=report;source['tests']['main_backend']=backend['tests']
+    source['tests']['overview']='Four full discipline cells including empty edges show scoped phase tooltips on mouse hover; leave hides the tooltip; 1280x720 and 1600x900 verified in EXE'
     source['specflow']['validated_at']='2026-10-29; unchanged in V'+version
     (ROOT/'开发源码/交付验证记录.json').write_text(json.dumps(source,ensure_ascii=False,indent=2),'utf-8')
     print(json.dumps({'version':version,'sha256':checksum,'backend_tests':backend['tests']}))

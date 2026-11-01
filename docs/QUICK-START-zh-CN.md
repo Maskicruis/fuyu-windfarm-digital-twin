@@ -1,17 +1,17 @@
-# 快速入门 · 扶余一号数字孪生 V0.9.3
+# 快速入门 · 扶余一号数字孪生 V0.9.4
 
 项目已公开开源，下载和默认在线更新均无需 GitHub 登录。
 
 ## 下载
 
-打开 [V0.9.3 发布页](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/v0.9.3)，展开页面底部的 **Assets**。
+打开 [V0.9.4 发布页](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/v0.9.4)，展开页面底部的 **Assets**。
 
 | 文件 | 用途 |
 | --- | --- |
-| [Fuyu-Digital-Twin-0.9.3-x64.exe](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/v0.9.3/Fuyu-Digital-Twin-0.9.3-x64.exe) | 数字孪生主程序，约 20.4 MB；包含展示界面、拖拽控制后台、设置与在线更新。 |
-| [SpecFlow-Knowledge-Component-1.0.0-x64.exe](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/v0.9.3/SpecFlow-Knowledge-Component-1.0.0-x64.exe) | 独立知识组件，约 101.1 MB；包含文件存储、PDF 解析、检索、连续对话和引用定位。 |
-| [fuyu-crrc-wind.ico](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/v0.9.3/fuyu-crrc-wind.ico) | Windows 图标，供快捷方式等使用。 |
-| [fuyu-crrc-wind.png](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/v0.9.3/fuyu-crrc-wind.png) · [SVG](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/v0.9.3/fuyu-crrc-wind.svg) | 图标预览和可编辑矢量原稿。 |
+| [Fuyu-Digital-Twin-0.9.4-x64.exe](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/v0.9.4/Fuyu-Digital-Twin-0.9.4-x64.exe) | 数字孪生主程序，约 20.4 MB；包含展示界面、拖拽控制后台、设置与在线更新。 |
+| [SpecFlow-Knowledge-Component-1.0.0-x64.exe](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/v0.9.4/SpecFlow-Knowledge-Component-1.0.0-x64.exe) | 独立知识组件，约 101.1 MB；包含文件存储、PDF 解析、检索、连续对话和引用定位。 |
+| [fuyu-crrc-wind.ico](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/v0.9.4/fuyu-crrc-wind.ico) | Windows 图标，供快捷方式等使用。 |
+| [fuyu-crrc-wind.png](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/v0.9.4/fuyu-crrc-wind.png) · [SVG](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/v0.9.4/fuyu-crrc-wind.svg) | 图标预览和可编辑矢量原稿。 |
 | fuyu-update.json | 主程序在线更新清单，程序自动读取。 |
 
 普通使用请选择 EXE 附件；GitHub 自动生成的 Source code（zip / tar.gz）供开发使用。两款程序均为 Windows x64 便携程序，无需安装 Python 或 Node.js。独立知识组件沿用自己的 1.0.0 版本。
@@ -26,7 +26,7 @@
 
 ## 总览与施工阶段
 
-顶部显示规模、容量、周期、用地与项目状态，左侧显示简介、建设进度及关注事项，底部为四专业进度。悬停任一进度条即可显示该专业当前施工阶段，青色节点表示当前阶段；Tab 聚焦也能显示。点击进入对应专业。
+顶部显示规模、容量、周期、用地与项目状态，左侧显示简介、建设进度及关注事项，底部为四专业进度。悬停任一专业的整块进度区域（含图标、名称、进度条、百分比与留白）即可显示该专业当前施工阶段，青色节点表示当前阶段；Tab 聚焦也能显示。点击进入对应专业。
 
 “设置 → 总览信息”中分别配置风机、场内交通、集电线路、升压站的当前阶段，并可调整面板不透明度。未确认规模保持 —，示意进度有专门标注。
 
