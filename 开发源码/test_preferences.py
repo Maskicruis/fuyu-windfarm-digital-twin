@@ -45,9 +45,19 @@ class PreferencesTests(unittest.TestCase):
     def test_progress_history_is_persistent_ordered_and_bounded(self):
         with tempfile.TemporaryDirectory() as root:
             store=Preferences(root)
-            history=[{'date':'2026-10-01','actual':0},{'date':'2026-10-30','actual':64}]
+            history=[{'date':'2026-10-01','actual':0,'planned':10},{'date':'2026-10-30','actual':64,'planned':71}]
             store.update({'overview':{'demo':False,'history':history}})
             self.assertEqual(Preferences(root).get()['overview']['history'],history)
-            for invalid in [history[::-1],history+[history[-1]], [{'date':'2026-02-30','actual':10}], [{'date':'2026-10-30','actual':101}], 'untrusted']:
+            for invalid in [history[::-1],history+[history[-1]], [{'date':'2026-02-30','actual':10}], [{'date':'2026-10-30','actual':101}], [{'date':'2026-10-30','actual':10,'planned':101}], 'untrusted']:
                 with self.assertRaises((ValueError,TypeError)):store.update({'overview':{'history':invalid}})
                 self.assertEqual(store.get()['overview']['history'],history)
+
+    def test_phase_status_parameters_and_transparency_persist_with_validation(self):
+        with tempfile.TemporaryDirectory() as root:
+            store=Preferences(root)
+            overview={'phase':'civil','status':'pending','panelOpacity':.5,'durationMonths':24,'landMu':1200,'capacityMW':360,'unitPhases':{'WT':'installation','SS':'civil'}}
+            store.update({'overview':overview})
+            self.assertEqual(Preferences(root).get()['overview'],overview)
+            for bad in [{'unitPhases':{'WT':'unknown'}},{'unitPhases':{'XX':'civil'}},{'phase':'unknown'},{'status':'unknown'},{'panelOpacity':.1},{'panelOpacity':1},{'durationMonths':-1},{'landMu':True}]:
+                with self.assertRaises(ValueError):store.update({'overview':bad})
+                self.assertEqual(store.get()['overview'],overview)

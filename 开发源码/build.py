@@ -22,7 +22,8 @@ for feature in ['system-settings.js','knowledge-ui.js','scene-playback.js']:
 frontend=frontend.replace('</style>','\n'+(HERE/'overview.css').read_text(encoding='utf-8')+'\n'+(HERE/'online-update.css').read_text(encoding='utf-8')+'</style>',1)
 frontend=frontend.replace('</style>','\n'+(HERE/'unified-workspace.css').read_text(encoding='utf-8')+'</style>',1)
 frontend=frontend.replace('</body>','<script>'+(HERE/'unified-workspace.js').read_text(encoding='utf-8').replace('</script','<\\/script')+'</script></body>',1)
-for feature in ['overview.js','online-update.js']:
+frontend=frontend.replace('</style>','\n'+(HERE/'glass-ui.css').read_text(encoding='utf-8')+'</style>',1)
+for feature in ['overview.js','online-update.js','scene-compass.js']:
     frontend=frontend.replace('</body>','<script>'+(HERE/feature).read_text(encoding='utf-8').replace('</script','<\\/script')+'</script></body>',1)
 frontend=frontend.replace('</body>','<script>'+(HERE/'runtime.js').read_text(encoding='utf-8').replace('</script','<\\/script')+'</script></body>',1)
 frontend=re.sub(r'<title>.*?</title>','<title>扶余一号 · 展示前端 V0.9.1</title>',frontend,count=1)
@@ -36,7 +37,7 @@ for feature in ['knowledge-ui.js','system-admin.js','online-update.js']:
     admin=admin.replace('</body>','<script>'+(HERE/feature).read_text(encoding='utf-8').replace('</script','<\\/script')+'</script></body>',1)
 admin=admin.replace('V0.9.1','V'+VERSION)
 (ROOT/'admin.html').write_text(admin,encoding='utf-8')
-for f in ['runtime.js','admin.js','construction-update.js','system-settings.js','scene-playback.js','knowledge-ui.js','system-admin.js','unified-workspace.js','overview.js','online-update.js']:subprocess.run([str(NODE),'--check',str(HERE/f)],check=True)
+for f in ['runtime.js','admin.js','construction-update.js','system-settings.js','scene-playback.js','knowledge-ui.js','system-admin.js','unified-workspace.js','overview.js','online-update.js','scene-compass.js']:subprocess.run([str(NODE),'--check',str(HERE/f)],check=True)
 from twin_plugin import build_assets
 build_assets(ROOT)
 (ROOT/'展示配置.json').write_text(json.dumps(preset,ensure_ascii=False,indent=2),encoding='utf-8')

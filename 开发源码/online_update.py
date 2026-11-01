@@ -110,7 +110,7 @@ class UpdateService:
         github_url(url)
         headers={'Accept':'application/octet-stream' if binary else 'application/vnd.github+json',
                  'User-Agent':'Fuyu-Desktop-Updater/'+self.current,'X-GitHub-Api-Version':'2022-11-28'}
-        token=self._token
+        token=getattr(self,'_token','')
         if token and urlsplit(url).hostname=='api.github.com':headers['Authorization']='Bearer '+token
         try:return self.opener.open(urllib.request.Request(url,headers=headers),timeout=45)
         except urllib.error.HTTPError as e:
@@ -123,7 +123,20 @@ class UpdateService:
         if len(raw)>1024*1024:raise UpdateError('更新元数据过大')
         return json.loads(raw)
 
+    def public_manifest(self):
+        # The public Release endpoint avoids GitHub API quotas and needs no credentials.
+        self._token=''
+        try:return self.json('https://github.com/'+self.config()['repository']+'/releases/latest/download/fuyu-update.json',binary=True)
+        except (UpdateError,urllib.error.URLError):return None
+
     def check(self):
+        manifest=self.public_manifest()
+        if manifest is not None:
+            item=self.parse_manifest(manifest)
+            if version(item['version'])<=version(self.current):
+                self.available=None;self.state.update(phase='current',message='已是最新版本 V'+self.current,progress=0,source='public');return
+            item['public_url']='https://github.com/'+self.config()['repository']+'/releases/download/v'+item['version']+'/'+item['file']
+            self.available=item;self.state.update(phase='available',message='发现新版本 V'+item['version'],progress=0,source='public');return
         self._token=self.token();repository=self.config()['repository'];api='https://api.github.com/repos/'+repository
         releases=self.json(api+'/releases?per_page=30');choices=[]
         for release in releases:
@@ -144,29 +157,33 @@ class UpdateService:
         self.state.update(phase='available',message='发现新版本 V'+self.available['version'],progress=0)
 
     @staticmethod
-    def validate_manifest(manifest,release):
+    def parse_manifest(manifest):
         if not isinstance(manifest,dict) or manifest.get('schema')!='fuyu-desktop-update/v1' or manifest.get('product')!='fuyu-windfarm-digital-twin':
             raise UpdateError('更新清单产品或格式不匹配')
         v=manifest.get('version');version(v)
-        if v!=str(release['tag_name']).removeprefix('v'):raise UpdateError('清单版本与发布标签不一致')
         a=manifest.get('windows-x64',{})
         if not isinstance(a,dict):raise UpdateError('更新安装包描述无效')
         filename=a.get('file','')
-        if not re.fullmatch(r'[A-Za-z0-9_.-]+\.exe',filename) or not re.fullmatch(r'[0-9a-f]{64}',a.get('sha256','')):
+        if not isinstance(filename,str) or not isinstance(a.get('sha256'),str) or not re.fullmatch(r'[A-Za-z0-9_.-]+\.exe',filename) or not re.fullmatch(r'[0-9a-f]{64}',a['sha256']):
             raise UpdateError('更新安装包名称或校验值无效')
         size=a.get('size')
         if type(size) is not int or not 1024<=size<=MAX_PACKAGE:raise UpdateError('安装包大小无效')
-        asset=next((x for x in release.get('assets',[]) if x.get('name')==filename and x.get('state')=='uploaded' and x.get('size')==size),None)
+        return {'version':v,'file':filename,'size':size,'sha256':a['sha256'],'notes':str(manifest.get('notes',''))[:4000]}
+
+    @staticmethod
+    def validate_manifest(manifest,release):
+        item=UpdateService.parse_manifest(manifest)
+        if item['version']!=str(release['tag_name']).removeprefix('v'):raise UpdateError('清单版本与发布标签不一致')
+        asset=next((x for x in release.get('assets',[]) if x.get('name')==item['file'] and x.get('state')=='uploaded' and x.get('size')==item['size']),None)
         if not asset or type(asset.get('id')) is not int:raise UpdateError('发布中缺少匹配的完整安装包')
-        return {'version':v,'file':filename,'size':size,'sha256':a['sha256'],'id':asset['id'],
-                'notes':str(manifest.get('notes',''))[:4000]}
+        return {**item,'id':asset['id']}
 
     def download(self):
         if not self.available:raise UpdateError('请先检查更新')
-        self._token=self.token();item=self.available;self.state.update(phase='downloading',message='正在下载并校验安装包',received=0,total=item['size'],progress=0)
+        item=self.available;self._token='' if item.get('public_url') else self.token();self.state.update(phase='downloading',message='正在下载并校验安装包',received=0,total=item['size'],progress=0)
         part=self.folder/(item['file']+'.part');destination=self.folder/item['file'];digest=hashlib.sha256();received=0
         try:
-            with self.request('https://api.github.com/repos/'+self.config()['repository']+'/releases/assets/'+str(item['id']),binary=True) as response,part.open('wb') as output:
+            with self.request(item.get('public_url') or ('https://api.github.com/repos/'+self.config()['repository']+'/releases/assets/'+str(item['id'])),binary=True) as response,part.open('wb') as output:
                 while True:
                     chunk=response.read(256*1024)
                     if not chunk:break

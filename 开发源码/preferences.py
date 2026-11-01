@@ -32,13 +32,13 @@ class Preferences:
         if clean['defaultUnit'] not in ['ALL', 'WT', 'RD', 'CL', 'SS']:
             raise ValueError('默认工程无效')
         overview = clean['overview']
-        if not isinstance(overview, dict) or set(overview) - {'demo', 'summary', 'capacityMW', 'turbines', 'circuits', 'stations', 'actual', 'planned', 'units', 'history'}:
+        if not isinstance(overview, dict) or set(overview) - {'demo', 'summary', 'capacityMW', 'turbines', 'circuits', 'stations', 'actual', 'planned', 'units', 'history', 'phase', 'status', 'panelOpacity', 'durationMonths', 'landMu', 'unitPhases'}:
             raise ValueError('总览参数无效')
         if 'demo' in overview and not isinstance(overview['demo'], bool):
             raise ValueError('演示状态无效')
         if 'summary' in overview and (not isinstance(overview['summary'], str) or len(overview['summary']) > 300):
             raise ValueError('项目简介过长')
-        for field in ['capacityMW', 'turbines', 'circuits', 'stations', 'actual', 'planned']:
+        for field in ['durationMonths', 'landMu', 'capacityMW', 'turbines', 'circuits', 'stations', 'actual', 'planned']:
             v = overview.get(field)
             limit = 100 if field in ['actual', 'planned'] else 1000000
             if v is not None and (type(v) not in [int, float] or not 0 <= v <= limit):
@@ -49,16 +49,23 @@ class Preferences:
         for v in units.values():
             if v is not None and (type(v) not in [int,float] or not 0 <= v <= 100):
                 raise ValueError('分项进度超出范围')
+        phases=overview.get('unitPhases',{})
+        if not isinstance(phases,dict) or set(phases)-{'WT','RD','CL','SS'} or any(p not in ['pending','preparation','civil','installation','commissioning'] for p in phases.values()):raise ValueError('分项施工阶段无效')
+        if overview.get('phase','pending') not in ['pending','preparation','civil','installation','commissioning']:raise ValueError('项目阶段无效')
+        if overview.get('status','pending') not in ['pending','normal','attention','risk']:raise ValueError('项目状态无效')
+        opacity=overview.get('panelOpacity',.62)
+        if type(opacity) not in [int,float] or not .25<=opacity<=.9:raise ValueError('面板不透明度须在0.25至0.9之间')
         history=overview.get('history',[])
         if not isinstance(history,list) or len(history)>60:
             raise ValueError('进度历史最多登记60个时间点')
         previous=''
         for row in history:
-            if not isinstance(row,dict) or set(row)!={'date','actual'} or not isinstance(row['date'],str):
+            if not isinstance(row,dict) or (not {'date','actual'}<=set(row) or set(row)-{'date','actual','planned'}) or not isinstance(row['date'],str):
                 raise ValueError('历史进度格式应为日期,百分比')
             datetime.date.fromisoformat(row['date'])
             if row['date']<=previous or type(row['actual']) not in [int,float] or not 0<=row['actual']<=100:
                 raise ValueError('历史日期须递增且进度在0至100之间')
+            if 'planned' in row and (type(row['planned']) not in [int,float] or not 0<=row['planned']<=100):raise ValueError('历史计划进度须在0至100之间')
             previous=row['date']
         datetime.date.fromisoformat(clean['dataDate'])
         return clean

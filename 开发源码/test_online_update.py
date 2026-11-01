@@ -40,11 +40,11 @@ class OnlineUpdateTests(unittest.TestCase):
         with self.assertRaises(UpdateError):self.service.validate_manifest(self.manifest,{'tag_name':'v0.9.2','assets':[]})
     def test_old_v12_release_without_manifest_is_ignored_and_new_release_selected(self):
         def data(url,**kw):return [dict(self.release,tag_name='v12.0.0',assets=[]),self.release] if '/releases?' in url else self.manifest
-        with patch.object(self.service,'token',return_value=''),patch.object(self.service,'json',side_effect=data):self.service.check()
+        with patch.object(self.service,'public_manifest',return_value=None),patch.object(self.service,'token',return_value=''),patch.object(self.service,'json',side_effect=data):self.service.check()
         self.assertEqual(self.service.available['version'],'0.9.2')
         self.assertEqual(self.service.state['phase'],'available')
     def test_current_release_does_not_offer_reinstall(self):
-        with patch.object(self.service,'token',return_value=''),patch.object(self.service,'json',return_value=[dict(self.release,tag_name='v0.9.1')]):self.service.check()
+        with patch.object(self.service,'public_manifest',return_value=None),patch.object(self.service,'token',return_value=''),patch.object(self.service,'json',return_value=[dict(self.release,tag_name='v0.9.1')]):self.service.check()
         self.assertEqual(self.service.state['phase'],'current');self.assertIsNone(self.service.available)
     def test_verified_download_is_atomic_and_does_not_touch_workspace_data(self):
         self.service.available=self.service.validate_manifest(self.manifest,self.release)
@@ -86,3 +86,16 @@ class OnlineUpdateTests(unittest.TestCase):
         redirect=SafeRedirect().redirect_request(req,None,302,'Found',{},'https://release-assets.githubusercontent.com/a')
         self.assertIsNone(redirect.get_header('Authorization'))
         with self.assertRaises(UpdateError):SafeRedirect().redirect_request(req,None,302,'Found',{},'https://evil.example/a')
+
+    def test_public_feed_and_download_do_not_access_saved_credentials(self):
+        with patch.object(self.service,'public_manifest',return_value=self.manifest),patch.object(self.service,'token',side_effect=AssertionError('credential lookup on public feed')):
+            self.service.check()
+            self.assertIn('/releases/download/v0.9.2/fuyu-0.9.2.exe',self.service.available['public_url'])
+            with patch.object(self.service,'request',return_value=io.BytesIO(self.exe)) as request:
+                self.service.download()
+            self.assertEqual(request.call_args.args[0],self.service.available['public_url'])
+            self.assertEqual(self.service.state['phase'],'ready')
+
+    def test_public_invalid_manifest_is_rejected_without_private_api_fallback(self):
+        with patch.object(self.service,'public_manifest',return_value={'product':'wrong'}),patch.object(self.service,'token',side_effect=AssertionError('unwanted API fallback')):
+            with self.assertRaises(UpdateError):self.service.check()

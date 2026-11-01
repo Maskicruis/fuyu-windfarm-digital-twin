@@ -22,7 +22,7 @@ def main():
     (DELIVERY/'交付验证记录.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),'utf-8')
     source=json.loads((ROOT/'开发源码/交付验证记录.json').read_text('utf-8'))
     source['date']='2026-10-30';source['main']=report;source['tests']['main_backend']=backend['tests']
-    source['tests']['overview']='Reference overview; independent equipment playback; dynamic compass; trend, alerts and footer'
+    source['tests']['overview']='Reference overview; top project parameters; four scoped hover phase tooltips; transparent panels; four unit compasses; public credential-free updater'
     source['specflow']['validated_at']='2026-10-29; unchanged in V'+version
     (ROOT/'开发源码/交付验证记录.json').write_text(json.dumps(source,ensure_ascii=False,indent=2),'utf-8')
     print(json.dumps({'version':version,'sha256':checksum,'backend_tests':backend['tests']}))
