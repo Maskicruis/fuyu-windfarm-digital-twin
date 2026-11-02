@@ -1,7 +1,45 @@
-# SpecFlow 知识组件
+# SpecFlow 知识组件 1.1.0
 
-直接裁剪自 SpecFlow 0.11.1。保留文件存储、MinerU PDF 解析、文档分组、RAG 检索、LLM/SSE、会话历史及原 PDF 精确定位。原 Logo 和图标沿用。
+独立运行的文件存储、PDF 解析、规范检索、连续问答与原文阅读组件。基于 SpecFlow 0.11.1 裁剪，并针对批量规范处理作适配；保留 SpecFlow 图标、流式客户端、会话渲染及引用数据契约。
 
-双击 portable EXE，左下设置配置模型与 MinerU。数据默认位于 EXE 同目录 workspace，API 设置和会话重启后沿用。独立使用不需要数字孪生 EXE。
+[下载 EXE 与快速入门](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/component-v1.1.0) · [接入接口](integration/README.md) · [本机验收记录](../docs/COMPONENT-1.1.0-VALIDATION.md)
 
-来源见 NOTICE.md、UPSTREAM-BACKEND.json 和 ui-provenance.json；接入其他系统见 integration/README.md。
+## 开始使用
+
+1. 将 `SpecFlow-Knowledge-Component-1.1.0-x64.exe` 放在有写入权限的目录，双击启动。升级原组件时放回原目录，保留 `workspace`。
+2. 左侧「设置 → 模型接口」填写兼容 Chat Completions 的接口地址、模型名与密钥，点击保存。修改地址或模型时，密钥留空会保留已保存的值；清除密钥需使用单独按钮。
+3. 打开「文档数据库」，选择分组后上传 PDF；桌面版也可点击「导入文件夹」批量导入。重复导入同一文件夹会按源路径、大小与修改时间跳过未变文件。
+4. 文字 PDF 优先快速提取，扫描件交给独立 OCR 队列。文件显示「已入库」后才进入检索范围；未完成解析时也可阅读原 PDF。
+5. 在问答框选择回答模式与文档/分组范围。点击答案的引用编号，打开对应 PDF 页并高亮原文；支持翻页和缩放。页码为 **PDF 文件页码**，可能与书籍印刷页码不同。
+
+| 回答模式 | 有相关资料 | 没有相关资料 |
+| --- | --- | --- |
+| 通用模型 | 不检索资料库，使用对话历史 | 使用通用模型 |
+| 严格规范 | 仅按检索片段回答，并附引用 | 直接说明依据不足，不调用通用模型补充 |
+| 智能回答 | 使用严格资料分支，明确资料未覆盖的内容 | 切换通用模型，标明通用回答且不显示资料引用 |
+
+接口模型与上述「回答模式」分别设置。更换模型名在设置中保存；问答框中的选择控制是否检索与如何使用证据。流式输出逐块展示 API 返回的答案；开启「深度思考」后，也展示服务商返回的思考内容。默认关闭深度思考以减少首字等待；其他兼容接口不强行注入 DeepSeek 专有参数。
+
+## 大量文件的处理方式
+
+- 文件上传流式写入本地，复制、文字提取、OCR 结果打包和索引写入在异步任务或工作线程中完成。
+- 文字提取与 OCR 各一条队列，避免大扫描件挡住文字 PDF。退出后保留任务记录，下次启动继续排队；中断文件可能重新解析。
+- SQLite FTS5 持久化倒排索引，重启复用，只更新新增或变更的文档。每轮只读取有限候选片段，不重新遍历全部 PDF，也不把整库交给模型。
+- PDF 阅读按 HTTP Range 分段加载；文字面板只读取目标页附近内容，避免先下载整份大 PDF。
+- 左下角显示已索引/全部文件数量、后台任务数；每份文件保留状态与失败原因。检索耗时与模型首字耗时单独显示，模型和网络耗时不属于本地索引耗时。
+
+本次在 35 份规范、27,339 个片段、OCR 同时运行时，36 次 HTTP 检索的中位数为 12.2 ms，P95 为 85.9 ms；真实模型 5 次生成的首字为 470–3,413 ms。这是本机样本实测，不是任意文件规模或网络条件下的保证。首次扫描件 OCR 仍需时间；未就绪文件不会被宣称已参与检索。
+
+## 数据、OCR 与适用边界
+
+数据默认位于 EXE 同目录 `workspace/data` 和 `workspace/资料库`，API 设置、文档、索引与会话重启后沿用。组件默认绑定 127.0.0.1，不依赖数字孪生 EXE。后台启动参数与外部接入见 integration/README.md。
+
+文字 PDF 不需要额外安装 OCR。扫描件需要已安装的 MinerU 及其模型，在「设置 → 解析引擎」选择可执行文件；EXE 不包含 OCR 模型。本机已有 MinerU 可直接沿用。文字层提取优先保证快速查找与原文坐标，复杂表格或字符异常应在原 PDF 核对，并可切换 OCR 重解析。少量可复制水印不等于完整文字层，稀疏文字 PDF 会转入 OCR。
+
+当前支持导入 PDF；其他格式需先转换 PDF。检索相关性判定和引用编号检查用于减少无依据回答，不能证明每句话语义正确，也不会自动确认规范现行有效性。可点击原文核查适用范围与数值。
+
+API 密钥沿用 SpecFlow 的本地设置存储方式，不写入公开交付。备份时保护 workspace，勿将原件、索引和 `workspace/data/settings.json` 上传 GitHub。来源、改动文件与许可见 NOTICE.md、UPSTREAM-BACKEND.json、ui-provenance.json。
+
+## 开发
+
+Node.js 24；`npm ci --prefix specflow-component`，`npm test --prefix specflow-component`，`npm run build --prefix specflow-component`。Windows x64 portable 包包含 Electron/Node 和 PDF.js；原 SpecFlow 的非知识库业务已移除。

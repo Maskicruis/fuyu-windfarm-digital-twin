@@ -141,6 +141,7 @@ async function readJsonBody(request) {
   }
 }
 
+function pipeFile(file,options,response){const stream=fs.createReadStream(file,options);response.once('close',()=>stream.destroy());stream.on('error',()=>response.destroy());return stream.pipe(response);}
 function sendFile(request, response, file, contentType) {
   if (!file || !fs.existsSync(file) || !fs.statSync(file).isFile()) throw new HttpError(404, '文件不存在', 'NOT_FOUND');
   const stat = fs.statSync(file);
@@ -160,7 +161,7 @@ function sendFile(request, response, file, contentType) {
       Pragma: 'no-cache',
       'X-Content-Type-Options': 'nosniff'
     });
-    return fs.createReadStream(file, { start, end }).pipe(response);
+    return pipeFile(file,{start,end},response);
   }
   response.writeHead(200, {
     'Content-Type': contentType,
@@ -170,7 +171,7 @@ function sendFile(request, response, file, contentType) {
     Pragma: 'no-cache',
     'X-Content-Type-Options': 'nosniff'
   });
-  return fs.createReadStream(file).pipe(response);
+  return pipeFile(file,{},response);
 }
 
 function decodeFileName(value) {
@@ -201,7 +202,8 @@ function createHttpServer({ service = new KnowledgeBaseService() } = {}) {
       }
       if (pathname.startsWith('/lib/')) {
         const filename = path.basename(pathname);
-        return sendStaticAsset(request, response, 'lib/' + filename, path.join(ROOT, 'lib', filename), MIMES[path.extname(filename).toLowerCase()] || 'application/octet-stream');
+        const sub=pathname.startsWith('/lib/cmaps/')?'cmaps':pathname.startsWith('/lib/standard_fonts/')?'standard_fonts':'';
+        return sendStaticAsset(request, response, 'lib/' + (sub?sub+'/':'') + filename, path.join(ROOT, 'lib',sub,filename), MIMES[path.extname(filename).toLowerCase()] || 'application/octet-stream');
       }
       if (pathname.startsWith('/app/')) {
         const filename = path.basename(pathname);
@@ -341,17 +343,20 @@ function createHttpServer({ service = new KnowledgeBaseService() } = {}) {
         const hasGroup = url.searchParams.has('group');
         return success(response, { items: service.list(hasGroup ? { groupId: url.searchParams.get('group') } : {}), queue: service.queue.snapshot() });
       }
+      if(pathname==='/api/v1/import/folder'&&request.method==='POST'){
+        const body=await readJsonBody(request);return success(response,await service.importFolder(body.directory,{groupId:body.groupId}),202);
+      }
       if (pathname === '/api/v1/jobs' && request.method === 'POST') {
         const contentType = String(request.headers['content-type'] || '').toLowerCase();
         let document;
         if (contentType.includes('application/json')) {
           const body = await readJsonBody(request);
           if (!body.sourcePath) throw new HttpError(400, '缺少 sourcePath', 'MISSING_SOURCE_PATH');
-          document = service.createFromPath(body.sourcePath, { title: body.title, parser: body.parser, groupId: body.groupId });
+          document = await service.createFromPathAsync(body.sourcePath, { title: body.title, parser: body.parser, groupId: body.groupId });
         } else {
           const filename = decodeFileName(request.headers['x-file-name']);
           if (!filename) throw new HttpError(400, '缺少 X-File-Name', 'MISSING_FILENAME');
-          document = service.createFromBuffer(filename, await readBody(request, MAX_UPLOAD_BYTES), { groupId: request.headers['x-group-id'] || '' });
+          document = await service.createFromReadable(filename, request, MAX_UPLOAD_BYTES, { groupId: request.headers['x-group-id'] || '' });
         }
         return success(response, { job: document }, 202);
       }
@@ -407,7 +412,7 @@ function createHttpServer({ service = new KnowledgeBaseService() } = {}) {
       if (pathname === '/api/documents') return sendJson(response, 200, { ok: true, docs: service.list(), queue: service.queue.pending.length, running: service.queue.active.size > 0 });
       if (pathname === '/api/import' && request.method === 'POST') {
         const filename = decodeFileName(request.headers['x-file-name']);
-        const document = service.createFromBuffer(filename, await readBody(request, MAX_UPLOAD_BYTES), { groupId: request.headers['x-group-id'] || '' });
+        const document = await service.createFromReadable(filename, request, MAX_UPLOAD_BYTES, { groupId: request.headers['x-group-id'] || '' });
         return sendJson(response, 202, { ok: true, id: document.id });
       }
       if (pathname === '/api/reparse' && request.method === 'POST') {
@@ -416,6 +421,7 @@ function createHttpServer({ service = new KnowledgeBaseService() } = {}) {
       }
       if (pathname === '/api/view' && request.method === 'GET') {
         const record = service.get(url.searchParams.get('id'));
+        if(url.searchParams.has('page'))return sendJson(response,200,{ok:true,title:record.title,items:service.rag.page(record.id,Math.max(1,Number(url.searchParams.get('page'))||1))});
         const canonical = service.loadCanonical(record && record.id);
         return sendJson(response, 200, { ok: true, title: record.title, items: toLegacyItems(canonical) });
       }

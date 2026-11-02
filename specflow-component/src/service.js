@@ -6,11 +6,11 @@ const path = require('node:path');
 const { DATA, ROOT, executableAvailable, loadSettings, saveSettings } = require('./config');
 const { JobQueue } = require('./job-queue');
 const { normalizeOptions: normalizeParserOptions } = require('./mineru-adapter');
-const { parseFile } = require('./pipeline');
+const { parseFile, stopParsing } = require('./pipeline');
 const { documentToMarkdown, toLegacyItems } = require('./transform');
 const { ensureDir, nowIso, readJson, resolveInside, safeName, stripAnsi, writeJson } = require('./utils');
 const { version: VERSION } = require('../package.json');
-const { RagIndex } = require('./rag');
+const { SqliteRagIndex: RagIndex } = require('./sqlite-rag');
 const { ask: askWithContext, askStream: askStreamContext } = require('./qa');
 const embeddings = require('./embeddings');
 const { isConfigured: llmConfigured, visionModel } = require('./llm');
@@ -40,13 +40,14 @@ class KnowledgeBaseService {
         changed = true;
       }
       if (document.status === 'parsing') {
-        document.status = 'error';
-        document.progressText = '服务重启，需重试';
-        document.error = '上次解析在服务重启时中断';
+        document.status = 'queued';
+        document.progressText = '服务重启，继续后台处理';
+        document.error = '';
         document.updatedAt = nowIso();
         changed = true;
       }
     }
+    for(const document of this.documents){if(document.status==='queued'&&document.parseStage==='ocr'&&document.parserOptions?.method!=='ocr'&&document.fastPassVersion!=='1.1.0'){document.parseStage='';changed=true;}}
     if (changed) this.persist();
     this.rag = new RagIndex(this.settings);
     this.conversationsFile = path.join(DATA, 'conversations.json');
@@ -54,11 +55,13 @@ class KnowledgeBaseService {
     if (!Array.isArray(this.conversations)) this.conversations = [];
     this.chatImages = new ChatImages(DATA);
     this.queue = new JobQueue({ concurrency: 1 });
-    this.queue.on('jobError', ({ id, error }) => this.fail(id, error));
+    this.ocrQueue = new JobQueue({concurrency:1});
+    this.ocrQueue.on('jobError',({id,error})=>{if(!this.shuttingDown)this.fail(id,error);});
+    this.queue.on('jobError', ({ id, error }) => {if(!this.shuttingDown)this.fail(id,error);});
     for (const document of this.documents.filter(item => item.status === 'queued')) {
       if (!document.inputPath && document.file) document.inputPath = path.join(INBOX, document.file);
       if (document.inputPath && fs.existsSync(document.inputPath)) {
-        this.queue.enqueue(document.id, () => this.process(document));
+        (document.parseStage==='ocr'?this.ocrQueue:this.queue).enqueue(document.id, () => this.process(document,document.parseStage==='ocr'));
       } else {
         this.fail(document.id, new Error('排队作业的源 PDF 已不存在'));
       }
@@ -100,7 +103,7 @@ class KnowledgeBaseService {
       legacy: path.join(outputDir, 'view.json'),
       corrections: path.join(outputDir, 'corrections.json'),
       markdown: path.join(outputDir, safeName(document.title) + '.md'),
-      source: path.join(outputDir, safeName(document.title) + '.pdf'),
+      source: fs.existsSync(path.join(outputDir,safeName(document.title)+'.pdf'))?path.join(outputDir,safeName(document.title)+'.pdf'):(document.inputPath||path.join(outputDir,safeName(document.title)+'.pdf')),
       images: path.join(outputDir, 'images')
     };
   }
@@ -160,6 +163,21 @@ class KnowledgeBaseService {
     return this.publicDocument(document);
   }
 
+  async createFromReadable(filename, readable, maximum, options = {}) {
+    const {Transform}=require('node:stream'),{pipeline}=require('node:stream/promises');
+    const document=this.createRecord(filename,options),inputPath=resolveInside(INBOX,document.id+'.pdf');let size=0;
+    const limit=new Transform({transform(chunk,_encoding,done){size+=chunk.length;if(size>maximum){const error=Error('单个文件最大 300 MB');error.status=413;error.code='PAYLOAD_TOO_LARGE';done(error);}else done(null,chunk);}});
+    try{await pipeline(readable,limit,fs.createWriteStream(inputPath));this.verifyPdf(inputPath);}
+    catch(error){await fs.promises.rm(inputPath,{force:true});throw error;}
+    document.inputPath=inputPath;this.documents.push(document);this.enqueue(document);return this.publicDocument(document);
+  }
+
+  async createFromPathAsync(sourcePath, options = {}) {
+    const resolved=path.resolve(sourcePath),stat=await fs.promises.stat(resolved);
+    if(!stat.isFile())throw Error('源文件不存在: '+resolved);
+    return this.createFromReadable(path.basename(resolved),fs.createReadStream(resolved),Number.MAX_SAFE_INTEGER,options);
+  }
+
   createFromPath(sourcePath, options = {}) {
     const resolved = path.resolve(sourcePath);
     if (!fs.existsSync(resolved) || !fs.statSync(resolved).isFile()) throw new Error('源文件不存在: ' + resolved);
@@ -179,19 +197,33 @@ class KnowledgeBaseService {
     return this.publicDocument(document);
   }
 
+  async importFolder(directory, options={}) {
+    const root=path.resolve(String(directory||''));if(!directory||!fs.statSync(root).isDirectory())throw Error('请选择规范文件夹');
+    const jobs=[];let skipped=0;
+    for(const file of await fs.promises.readdir(root,{withFileTypes:true})){
+      if(!file.isFile()||!file.name.toLowerCase().endsWith('.pdf'))continue;
+      const source=path.join(root,file.name),stat=await fs.promises.stat(source),signature=source+'|'+stat.size+'|'+stat.mtimeMs;
+      const prior=this.documents.find(d=>d.sourceSignature===signature);if(prior){skipped++;continue;}
+      const document=this.createRecord(file.name,options),inputPath=resolveInside(INBOX,document.id+'.pdf');
+      await fs.promises.copyFile(source,inputPath);this.verifyPdf(inputPath);document.inputPath=inputPath;document.sourceSignature=signature;
+      this.documents.push(document);this.enqueue(document);jobs.push(this.publicDocument(document));
+    }
+    this.persist();return {jobs,skipped};
+  }
+
   enqueue(document) {
     document.status = 'queued';
     document.progress = 0;
     document.progressText = '排队中';
     document.updatedAt = nowIso();
     this.persist();
-    this.queue.enqueue(document.id, () => this.process(document));
+    (document.parseStage==='ocr'?this.ocrQueue:this.queue).enqueue(document.id, () => this.process(document,document.parseStage==='ocr'));
   }
 
   retry(id) {
     const document = this.get(id);
     if (!document) throw new Error('文档不存在');
-    if (this.queue.has(id)) throw new Error('该作业已在队列中');
+    if (this.queue.has(id)||this.ocrQueue.has(id)) throw new Error('该作业已在队列中');
     this.enqueue(document);
     return this.publicDocument(document);
   }
@@ -211,17 +243,14 @@ class KnowledgeBaseService {
     this.log(id, 'ERROR ' + document.error);
   }
 
-  async process(document) {
+  async process(document,ocr=false) {
     document.status = 'parsing';
-    document.progressText = '分析版面…';
+    document.progressText = ocr?'扫描件 OCR 中…':'快速读取文字层…';
     document.error = '';
     document.updatedAt = nowIso();
     this.persist();
-    if (!executableAvailable(this.settings.mineru)) {
-      throw new Error('未找到 MinerU 解析引擎。请运行工具目录中的 setup-mineru.ps1，或在页面中填写 mineru.exe 的完整路径后重试。');
-    }
     const workDir = resolveInside(WORK, document.id);
-    if (fs.existsSync(workDir)) fs.rmSync(workDir, { recursive: true, force: true });
+    if (fs.existsSync(workDir)) await fs.promises.rm(workDir, { recursive: true, force: true });
     ensureDir(workDir);
     const paths = this.paths(document);
     const corrections = readJson(paths.corrections, {});
@@ -241,11 +270,12 @@ class KnowledgeBaseService {
       workDir,
       outputDir: paths.outputDir,
       executable: this.settings.mineru,
-      parserOptions: document.parserOptions,
+      parserOptions: {...document.parserOptions,...(ocr?{method:'ocr'}:{})},
+      nativeOnly:!ocr,
       corrections,
       onProgress: progress => {
         document.progress = progress;
-        document.progressText = '解析中 ' + progress + '%';
+        document.progressText = (ocr?'OCR ':'文字提取 ')+progress+'%';
         touch();
       },
       onLog: tail => {
@@ -253,14 +283,19 @@ class KnowledgeBaseService {
         touch();
       }
     });
+    if(result.needsOCR){document.status='queued';document.fastPassVersion='1.1.0';document.parseStage='ocr';document.progress=0;document.progressText='扫描件待 OCR（不阻塞文字 PDF）';this.persist();this.ocrQueue.enqueue(document.id,()=>this.process(document,true));return;}
+    await this.rag.refresh();
+    document.parser = result.document.document.parser || 'mineru';
+    document.parseNote = result.document.document.parseNote || '';
     document.status = 'ready';
     document.progress = 100;
-    document.progressText = '完成';
+    document.progressText = '索引就绪';
     document.updatedAt = nowIso();
-    document.pages = result.document.document.pageCount;
-    document.chars = result.document.items.reduce((sum, item) => sum + String(item.text || item.html || '').length, 0);
-    document.images = result.document.items.filter(item => item.type === 'image' || item.type === 'chart').length;
-    document.items = result.document.items.length;
+    document.pages = result.stats?.pages??result.document.document.pageCount;
+    document.chars = result.stats?.chars??result.document.items.reduce((sum, item) => sum + String(item.text || item.html || '').length, 0);
+    document.images = result.stats?.images??result.document.items.filter(item => item.type === 'image' || item.type === 'chart').length;
+    document.items = result.stats?.items??result.document.items.length;
+    const priorInput=document.inputPath;document.inputPath=result.files.sourceFile;if(priorInput!==document.inputPath&&priorInput.startsWith(INBOX+path.sep))await fs.promises.rm(priorInput,{force:true});
     delete document.logTail;
     this.persist();
     this.log(document.id, 'OK ' + JSON.stringify({ pages: document.pages, items: document.items }));
@@ -296,6 +331,7 @@ class KnowledgeBaseService {
     corrections[itemId] = Object.assign({}, corrections[itemId] || {}, correction, { updatedAt: nowIso() });
     writeJson(paths.corrections, corrections);
     writeJson(paths.canonical, canonical);
+    this.rag.build(true);
     writeJson(paths.legacy, toLegacyItems(canonical));
     fs.writeFileSync(paths.markdown, documentToMarkdown(canonical), 'utf8');
     record.updatedAt = nowIso();
@@ -315,8 +351,9 @@ class KnowledgeBaseService {
     if (patch.host) next.host = String(patch.host);
     if (patch.parser) next.parser = normalizeParserOptions(Object.assign({}, next.parser, patch.parser));
     if (patch.llm) next.llm = Object.assign({}, next.llm, patch.llm);
+    const priorLibrary=this.settings.library;
     this.settings = saveSettings(next);
-    this.rag = new RagIndex(this.settings);
+    if(priorLibrary!==this.settings.library){this.rag.close?.();this.rag = new RagIndex(this.settings);}else this.rag.settings=this.settings;
     ensureDir(this.settings.library);
     return this.settings;
   }
@@ -393,7 +430,7 @@ class KnowledgeBaseService {
     return this.publicDocument(document);
   }
 
-  shutdown() {}
+  async shutdown() { this.shuttingDown=true;this.queue.pending=[];this.ocrQueue.pending=[];await Promise.all([this.rag.close?.(),stopParsing()]); }
 
   resolveDocumentIds(payload = {}) {
     if (Array.isArray(payload.docIds)) return payload.docIds.map(String);
@@ -556,15 +593,15 @@ class KnowledgeBaseService {
       product: 'specflow-knowledge-component',
       version: VERSION,
       features: [
-        'pdf-parse(mineru)', 'canonical-document', 'page-bbox-coordinates',
-        'local-search(bm25)', 'hybrid-search(bm25+embedding, optional)', 'llm-qa', 'llm-stream',
+        'pdf-text-first', 'pdf-parse(mineru)', 'background-ocr', 'canonical-document', 'page-bbox-coordinates',
+        'local-search(sqlite-fts5)', 'hybrid-search(fts5+embedding, optional)', 'llm-qa', 'llm-stream',
         'citation-jump-highlight', 'inline-citation-links', 'desktop-citation-handoff', 'conversation-history', 'multi-turn-chat',
         'image-paste', 'multimodal-chat', 'image-aware-retrieval',
         'stream-forwarding', 'stream-cancellation',
         'document-groups', 'group-scoped-retrieval', 'general-llm-fallback', 'item-export',
         'semantic-query-expansion', 'ambiguity-clarification'
       ],
-      retrieval: { default: 'bm25', hybrid: embeddings.isConfigured(this.settings.llm) ? 'available' : 'requires embeddingModel' },
+      retrieval: { default: 'sqlite-fts5', hybrid: embeddings.isConfigured(this.settings.llm) ? 'available' : 'requires embeddingModel' },
       images: { ...IMAGE_LIMITS, formats: ['image/png', 'image/jpeg', 'image/gif', 'image/webp'], visionModel: visionModel(this.settings.llm) },
       schemas: {
         ask: 'schemas/ask-response.schema.json',
@@ -661,25 +698,26 @@ class KnowledgeBaseService {
   }
 
   health() {
-    try { this.rag.build(); } catch (error) { /* 索引构建失败不影响健康检查 */ }
+
     return {
       service: 'knowledge-base-tool',
       status: 'ok',
       version: VERSION,
       apiVersion: 'v1',
       library: this.settings.library,
-      parserAvailable: executableAvailable(this.settings.mineru),
+      parserAvailable: true,
       mineru: {
         command: this.settings.mineru,
         available: executableAvailable(this.settings.mineru),
-        setupScript: path.join(ROOT, 'setup-mineru.ps1')
+        setupScript: fs.existsSync(path.join(ROOT,'setup-mineru.ps1'))?path.join(ROOT,'setup-mineru.ps1'):null
       },
-      capabilities: ['pdf', 'mineru', 'canonical-content', 'pdf-highlight', 'job-queue', 'local-search(bm25)', 'llm-qa', 'citation-jump-highlight'],
+      capabilities: ['pdf-text-first', 'pdf', 'mineru', 'background-ocr', 'canonical-content', 'pdf-highlight', 'job-queue', 'local-search(sqlite-fts5)', 'llm-qa', 'citation-jump-highlight'],
       llm: this.llmStatus(),
-      retrieval: { default: 'bm25', hybrid: embeddings.isConfigured(this.settings.llm) ? 'available' : 'requires embeddingModel' },
+      retrieval: { default: 'sqlite-fts5', hybrid: embeddings.isConfigured(this.settings.llm) ? 'available' : 'requires embeddingModel' },
       conversations: this.conversations.length,
-      index: { entries: this.rag.loaded, documents: this.rag.docs.length },
-      queue: this.queue.snapshot()
+      index: this.rag.status(),
+      queue: this.queue.snapshot(),
+      ocrQueue: this.ocrQueue.snapshot()
     };
   }
 }

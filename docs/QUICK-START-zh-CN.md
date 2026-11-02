@@ -9,12 +9,12 @@
 | 文件 | 用途 |
 | --- | --- |
 | [Fuyu-Digital-Twin-0.9.4-x64.exe](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/v0.9.4/Fuyu-Digital-Twin-0.9.4-x64.exe) | 数字孪生主程序，约 20.4 MB；包含展示界面、拖拽控制后台、设置与在线更新。 |
-| [SpecFlow-Knowledge-Component-1.0.0-x64.exe](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/v0.9.4/SpecFlow-Knowledge-Component-1.0.0-x64.exe) | 独立知识组件，约 101.1 MB；包含文件存储、PDF 解析、检索、连续对话和引用定位。 |
+| [SpecFlow-Knowledge-Component-1.1.0-x64.exe](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/component-v1.1.0/SpecFlow-Knowledge-Component-1.1.0-x64.exe) | 独立知识组件，约 101.9 MB；文字层快速提取、后台 OCR、持久化索引、三模式问答和原文定位。 |
 | [fuyu-crrc-wind.ico](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/v0.9.4/fuyu-crrc-wind.ico) | Windows 图标，供快捷方式等使用。 |
 | [fuyu-crrc-wind.png](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/v0.9.4/fuyu-crrc-wind.png) · [SVG](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/v0.9.4/fuyu-crrc-wind.svg) | 图标预览和可编辑矢量原稿。 |
 | fuyu-update.json | 主程序在线更新清单，程序自动读取。 |
 
-普通使用请选择 EXE 附件；GitHub 自动生成的 Source code（zip / tar.gz）供开发使用。两款程序均为 Windows x64 便携程序，无需安装 Python 或 Node.js。独立知识组件沿用自己的 1.0.0 版本。
+普通使用请选择 EXE 附件；GitHub 自动生成的 Source code（zip / tar.gz）供开发使用。两款程序均为 Windows x64 便携程序，无需安装 Python 或 Node.js。独立知识组件使用自己的 1.1.0 版本，单独发布。
 
 ## 启动数字孪生主程序
 
@@ -36,7 +36,7 @@
 
 ## 使用独立知识组件
 
-将知识组件 EXE 放入另一个固定文件夹，双击启动。在左下角设置中配置模型 API 和本机 MinerU，建立文档分组，导入 PDF 并解析，随后进行连续问答或点击引用定位原 PDF。PDF 解析需要本机已配置的 MinerU。
+将知识组件 EXE 放入另一个固定文件夹，双击启动。在左下角设置中配置模型 API，建立文档分组，上传 PDF 或导入文件夹。文字 PDF 快速提取，扫描件需要本机已配置的 MinerU。问答框可切换通用模型、严格规范和智能回答；点击引用定位原 PDF。升级时保留原 workspace。详细步骤见[组件快速入门](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/tree/main/specflow-component)。
 
 主程序和独立组件各自使用自己的 workspace，资料不会自动同步。对外接入说明见 [组件集成指南](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/tree/main/specflow-component/integration)。
 

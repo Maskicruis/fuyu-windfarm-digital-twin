@@ -202,7 +202,7 @@ async function searchDetailed(index, query, options = {}, deps = {}) {
   const topK = Math.max(1, Math.min(50, Number(options.topK) || 8));
   const pool = Math.max(topK * 4, 20);
   const bm25 = index.search(query, { topK: pool, docIds: options.docIds });
-  const meta = { mode: 'bm25', embeddingModel: '', vectors: 0, fused: false };
+  const meta = { mode: index.status?.().engine==='sqlite-fts5'?'fts5':'bm25', embeddingModel: '', vectors: 0, fused: false };
   const llm = (deps.settings && deps.settings.llm) || deps.llm || null;
   const embeddings = deps.embeddings;
   if (!embeddings || !embeddings.isConfigured(llm)) return { hits: bm25.slice(0, topK), retrieval: meta };

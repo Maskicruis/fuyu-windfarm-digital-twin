@@ -61,6 +61,7 @@ const DEFAULTS = Object.freeze({
     baseUrl: '',
     apiKey: '',
     model: '',
+    thinking: false,
     visionModel: '',
     embeddingModel: '',
     timeoutMs: 120000

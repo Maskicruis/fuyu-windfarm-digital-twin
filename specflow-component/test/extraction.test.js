@@ -4,6 +4,7 @@ const root=path.resolve(__dirname,'..');
 test('retained SpecFlow parser, model and citation modules match declared upstream bytes',()=>{
  const manifest=require('../UPSTREAM-BACKEND.json');
  for(const entry of manifest.byte_identical_core)assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(root,entry.path))).digest('hex'),entry.sha256,entry.path);
+ for(const entry of manifest.adapted_core||[])assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(root,entry.path))).digest('hex'),entry.sha256,entry.path);
  const ui=require('../ui-provenance.json');for(const [file,hash]of Object.entries(ui.retained_module_sha256))assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(root,file))).digest('hex'),hash,file);
 });
 test('removed business routes are absent from component code and desktop bridge',()=>{

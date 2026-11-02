@@ -11,7 +11,7 @@
 ## 两项交付
 
 1. `../扶余一号数字孪生/扶余一号数字孪生.exe`：展示前端、拖拽控制后台、设置、悬浮智能体及现有三维场景。
-2. `../知识与大模型独立组件/SpecFlow-Knowledge-Component-1.0.0-x64.exe`：从 SpecFlow 原工程直接裁剪，只保留文件存储/解析、分组检索、LLM、流式输出、会话和精确引用阅读器。其源码在 `specflow-component/`，来源和未修改文件哈希见该目录的 provenance 文件。
+2. `../知识与大模型独立组件/SpecFlow-Knowledge-Component-1.1.0-x64.exe`：[独立组件发布页](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/component-v1.1.0)。基于 SpecFlow 裁剪并增强文字层快速提取、独立 OCR、持久化 FTS 索引、三种回答模式和按页原文阅读。来源和适配模块分别登记在 `specflow-component/` 的 provenance 文件；见[使用说明](specflow-component/README.md)与[验收记录](docs/COMPONENT-1.1.0-VALIDATION.md)。主程序版本继续为 V0.9.4。
 
 ## 项目总览
 
@@ -47,7 +47,7 @@
 
 数字孪生的数据在 EXE 同目录 `workspace/data`；主系统 API 凭据由当前 Windows 账户加密保存。独立 SpecFlow 组件使用自己的 `workspace/data` 和资料库，设置存储方式沿用 SpecFlow；勿上传数据目录到 GitHub。主系统从本版本起支持在设置中在线更新；独立 SpecFlow 组件继续按独立版本发布。
 
-独立组件使用原版 MinerU 流程，目前导入 PDF；OCR 模型不打包进 EXE。在设置中选择已安装的 MinerU。对外接口、连续对话和引用定位见 `specflow-component/integration/README.md`。主系统现有知识库支持的格式与独立组件不同，各自说明以实际接口为准。
+独立组件目前导入 PDF，文字层快速提取、扫描件独立 OCR；OCR 模型不打包进 EXE。在设置中选择已安装的 MinerU。对外接口、连续对话和引用定位见 `specflow-component/integration/README.md`。主系统现有知识库支持的格式与独立组件不同，各自说明以实际接口为准。
 
 ## 在线更新
 

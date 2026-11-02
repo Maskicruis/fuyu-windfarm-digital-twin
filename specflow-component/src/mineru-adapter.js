@@ -60,6 +60,8 @@ function withLocalProxyBypass(env = process.env) {
   return Object.assign({}, env, { NO_PROXY: noProxy, no_proxy: noProxy });
 }
 
+const activeChildren=new Set();
+function stopMineru(){for(const child of activeChildren){if(process.platform==='win32'&&child.pid)spawn('taskkill',['/PID',String(child.pid),'/T','/F'],{windowsHide:true,stdio:'ignore'});else child.kill();}activeChildren.clear();}
 function runMineru({ executable, inputPath, outputDir, options, onProgress, onLog }) {
   const normalized = normalizeOptions(options);
   const args = buildArgs(inputPath, outputDir, normalized);
@@ -69,6 +71,7 @@ function runMineru({ executable, inputPath, outputDir, options, onProgress, onLo
       shell: false,
       env: Object.assign(withLocalProxyBypass(), { MINERU_MODEL_SOURCE: normalized.modelSource })
     });
+    activeChildren.add(child);child.once('close',()=>activeChildren.delete(child));
     let output = '';
     let maximum = 0;
     let lastEmission = 0;
@@ -94,4 +97,4 @@ function runMineru({ executable, inputPath, outputDir, options, onProgress, onLo
   });
 }
 
-module.exports = { buildArgs, normalizeOptions, runMineru, withLocalProxyBypass };
+module.exports = { buildArgs, normalizeOptions, runMineru, stopMineru, withLocalProxyBypass };

@@ -28,6 +28,7 @@ async function chat(llm, messages, options = {}) {
   const url = normalizeBase(cfg.baseUrl) + '/chat/completions';
   const model = requestModel(cfg, messages);
   const body = { model, messages, temperature: options.temperature == null ? 0.2 : options.temperature, stream: false };
+  try{if(new URL(cfg.baseUrl).hostname==='api.deepseek.com')body.thinking={type:cfg.thinking===true?'enabled':'disabled'};}catch{}
   const headers = { 'Content-Type': 'application/json' };
   if (String(cfg.apiKey || '').trim()) headers.Authorization = 'Bearer ' + String(cfg.apiKey).trim();
   const controller = new AbortController();
@@ -51,6 +52,7 @@ async function chatStream(llm, messages, onDelta, options = {}) {
   const url = normalizeBase(cfg.baseUrl) + '/chat/completions';
   const model = requestModel(cfg, messages);
   const body = { model, messages, temperature: options.temperature == null ? 0.2 : options.temperature, stream: true };
+  try{if(new URL(cfg.baseUrl).hostname==='api.deepseek.com')body.thinking={type:cfg.thinking===true?'enabled':'disabled'};}catch{}
   const headers = { 'Content-Type': 'application/json' };
   if (String(cfg.apiKey || '').trim()) headers.Authorization = 'Bearer ' + String(cfg.apiKey).trim();
   const controller = new AbortController();

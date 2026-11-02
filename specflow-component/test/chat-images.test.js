@@ -15,7 +15,7 @@ const { createHttpServer } = require('../src/http-server');
 const { createStubLlm } = require('./stub-llm-server');
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6BkoAAAAASUVORK5CYII=', 'base64');
 
-test.after(() => fs.rmSync(root, { recursive: true, force: true }));
+test.after(() => fs.rmSync(root, { recursive: true, force: true, maxRetries:20,retryDelay:50 }));
 
 function configure(service, port, patch = {}) {
   service.updateSettings({ library: path.join(root, 'library'), llm: { baseUrl: 'http://127.0.0.1:' + port + '/v1', model: 'text-model', visionModel: 'vision-model', apiKey: '', embeddingModel: '', ...patch } });
@@ -97,6 +97,7 @@ test('image-aware RAG searches extracted terms in the selected group and attache
   const group = service.createGroup('图像测试规范');
   service.documents.push({ id: 'image_doc', groupId: group.id });
   let scope;
+  await service.rag.close();
   service.rag = {
     build: () => {},
     search: (query, options) => {

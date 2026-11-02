@@ -9,15 +9,17 @@ import subprocess
 import threading
 import time
 import urllib.request
+import urllib.parse
 
 ROOT = Path(__file__).resolve().parent.parent
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--exe', type=Path, default=ROOT/'specflow-component/release/SpecFlow-Knowledge-Component-1.0.0-x64.exe')
+    parser.add_argument('--exe', type=Path, default=ROOT/'specflow-component/release/SpecFlow-Knowledge-Component-1.1.0-x64.exe')
+    parser.add_argument('--pdf', type=Path, help='Optional local text PDF for real upload/index/range checks; never published')
     args = parser.parse_args()
-    area = ROOT/'开发源码/验收产物/specflow-package-proof'
+    area = ROOT/'开发源码/验收产物/specflow-package-proof-v110'
     area.mkdir(parents=True, exist_ok=True)
     executable = area/args.exe.name
     shutil.copy2(args.exe, executable)
@@ -112,6 +114,35 @@ def main():
         assert any('package first turn' in str(m.get('content','')) for m in calls[-1]['messages'])
         saved=request(base,'/api/v1/conversations/'+conversation['id'])
         assert len(saved['turns']) >= 2
+        if args.pdf:
+            upload=urllib.request.Request(base+'/api/v1/jobs',data=args.pdf.read_bytes(),headers={'Content-Type':'application/pdf','X-File-Name':'native-validation.pdf'})
+            with urllib.request.urlopen(upload,timeout=30) as response:
+                job=json.load(response)['data']
+            doc_id=job.get('id') or job.get('job',{}).get('id')
+            assert doc_id,job
+            for _ in range(90):
+                job=request(base,'/api/v1/jobs/'+doc_id)['job']
+                if job['status'] in ['ready','error']:break
+                time.sleep(1)
+            assert job['status']=='ready',job
+            assert job['parser']=='pdf-text',job
+            hits=request(base,'/api/v1/search?q='+urllib.parse.quote('混凝土养护')+'&doc='+doc_id)['hits']
+            assert hits and hits[0]['bboxNormalized'],hits
+            hit=hits[0]
+            page_url=base+'/api/view?id='+doc_id+'&page='+str(hit['page'])
+            with urllib.request.urlopen(page_url,timeout=5) as response:
+                assert json.load(response)['items']
+            req=urllib.request.Request(base+'/api/v1/documents/'+doc_id+'/source',headers={'Range':'bytes=0-1023'})
+            with urllib.request.urlopen(req,timeout=5) as response:
+                assert response.status==206
+                assert response.headers['Accept-Ranges']=='bytes'
+                assert len(response.read())==1024
+            other=start(['--port','38911'])
+            try:
+                other.wait(timeout=120)
+                assert json.loads(record.read_text('utf-8'))['pid']==service['pid']
+            finally:
+                if other.poll() is None:subprocess.run(['taskkill','/PID',str(other.pid),'/T','/F'],capture_output=True)
         stop()
         process=start([])
         service=wait_service()
@@ -125,6 +156,7 @@ def main():
                'exe_alone':True,'original_ui_bytes':True,'sse_event_types':sorted(kinds),
                'context_history':True,'settings_and_history_survive_restart':True,
                'configured_port_survives_restart':True,'provider':'local mock, no real model API call',
+               'native_upload_search_page_range_singleton':bool(args.pdf),
                'data_isolation':True}
         (ROOT/'开发源码/验收产物/SpecFlow-binary-verification.json').write_text(json.dumps(proof,indent=2),'utf-8')
         print(json.dumps(proof),flush=True)

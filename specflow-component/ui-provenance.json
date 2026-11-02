@@ -10,7 +10,13 @@
     "lib/pdf.min.mjs": "a02824947bc48a70158e2e4cd935e4039ed8fff5ed9d9ad60353fcbf485cb91e",
     "lib/pdf.worker.min.mjs": "9d9b4c2f61455ed9b9c5a174a25113a7c4af75ecc5e929600dc8848d6688a302"
   },
-  "retained_inline_function_sha256": {
+  "changes": [
+    "Removed project/design/checklist/tools/website-monitor/Harness/update/balance markup, state, handlers and modules.",
+    "Default navigation has only assistant/database; settings has parser/model only.",
+    "Unused feature selectors removed; original chat/image/stream modules and original PDF reader retained.",
+    "1.1.0 adapts answering-mode UI, native/OCR task states, bulk folder import, timings and bounded PDF Range reader; upstream inline hashes are historical, not a byte-identical claim."
+  ],
+  "upstream_inline_function_sha256": {
     "citationAttrs": "0d82621a0f75dfa84f9d61f9a8d9426225705d8a9de51e16f9d27e2190143df0",
     "citationLink": "10654864a5b722f27d7a54c4f30b1d29fcd0b090ed455d8cad9711d2947cfb5b",
     "citationSourceLink": "0a0c51638986ef587790e48a9c43019d1dbffb5d815378afb0f889b7c085c0c8",
@@ -22,10 +28,6 @@
     "openCitation": "acafb7d2d81851cad0df70726e8b0b42569f84cfb8a049dbce4ec0f240a39e75",
     "openCitationFromLocation": "dd09ae5637f098cc4706b2355781e2934658204267a5ed6d2145dd7c72ed1a53"
   },
-  "pdf_reader_module_sha256": "bb0d06f22d02cc1c6011675c58fc4c8a2524661bc10de529cae9697fb2f6c0c2",
-  "changes": [
-    "Removed project/design/checklist/tools/website-monitor/Harness/update/balance markup, state, handlers and modules.",
-    "Default navigation has only assistant/database; settings has parser/model only.",
-    "Unused feature selectors removed; original chat/image/stream modules and original PDF reader retained."
-  ]
+  "upstream_pdf_reader_module_sha256": "bb0d06f22d02cc1c6011675c58fc4c8a2524661bc10de529cae9697fb2f6c0c2",
+  "current_ui_sha256": "04af82d1831dc744ea502b379e3d9eb331cbf106b4d68c638e051e16c7fae12b"
 }

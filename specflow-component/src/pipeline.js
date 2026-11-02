@@ -1,11 +1,15 @@
 'use strict';
 
 const fs = require('node:fs');
+const {Worker}=require('node:worker_threads');
 const path = require('node:path');
-const { runMineru } = require('./mineru-adapter');
+const { runMineru, stopMineru } = require('./mineru-adapter');
 const { applyCorrections, buildDocument, documentToMarkdown, toLegacyItems } = require('./transform');
 const { copyDirectoryFiles, ensureDir, readJson, safeName, walkFiles, writeJson } = require('./utils');
 
+const activeWorkers=new Set();
+function track(worker){activeWorkers.add(worker);worker.once('exit',()=>activeWorkers.delete(worker));return worker;}
+async function stopParsing(){stopMineru();await Promise.all([...activeWorkers].map(w=>w.terminate()));}
 function findArtifacts(workDir) {
   const jsonFiles = walkFiles(workDir, file => file.toLowerCase().endsWith('.json'));
   const markdownFiles = walkFiles(workDir, file => file.toLowerCase().endsWith('.md'));
@@ -73,11 +77,22 @@ async function parseFile({
   outputDir,
   executable,
   parserOptions,
+  nativeOnly=false,
   corrections,
   onProgress,
   onLog
 }) {
   ensureDir(workDir);
+  if (parserOptions?.method !== 'ocr') {
+    const document = await new Promise((resolve,reject)=>{
+      const worker=track(new Worker(path.join(__dirname,'pdf-text-worker.js'),{workerData:{id,title,sourceName,inputPath,outputDir,corrections}}));
+      worker.on('message',m=>{if(m.progress!=null)onProgress?.(m.progress);if('result'in m)resolve(m.result);if(m.error)reject(Error(m.error));});
+      worker.once('error',reject);worker.once('exit',code=>{if(code)reject(Error('文本提取中断'));});
+    }).catch(error=>{onLog?.('文字层无法直接读取，将使用 OCR：'+error.message);return null;});
+    if(document)return document;
+    onLog?.('扫描件或文字层不完整，转入 MinerU OCR。');
+  }
+  if(nativeOnly)return {needsOCR:true};
   await runMineru({
     executable,
     inputPath,
@@ -86,15 +101,10 @@ async function parseFile({
     onProgress,
     onLog
   });
-  return convertArtifacts({
-    id,
-    title,
-    sourceName,
-    workDir,
-    outputDir,
-    sourcePath: inputPath,
-    corrections
+  return new Promise((resolve,reject)=>{
+   const worker=track(new Worker(path.join(__dirname,'package-worker.js'),{workerData:{id,title,sourceName,workDir,outputDir,inputPath,corrections}}));
+   worker.once('message',m=>m.error?reject(Error(m.error)):resolve(m.result));worker.once('error',reject);worker.once('exit',code=>{if(code)reject(Error('资料打包中断'));});
   });
 }
 
-module.exports = { convertArtifacts, findArtifacts, parseFile, writePackage };
+module.exports = { convertArtifacts, findArtifacts, parseFile, writePackage, stopParsing };
