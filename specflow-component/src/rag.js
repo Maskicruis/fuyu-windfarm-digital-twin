@@ -199,6 +199,10 @@ function makeSnippet(text, tokens) {
 /** 混合检索：BM25 + 向量（可选）RRF 融合；未配置 embedding 时等价于 BM25 */
 async function searchDetailed(index, query, options = {}, deps = {}) {
   index.build();
+  if(options.corpus&&typeof index.searchCorpus==='function'){
+    const result=index.searchCorpus(query,{docIds:options.docIds,queries:options.queries,perDocument:3});
+    return {hits:result.hits,retrieval:{mode:'fts5',strategy:'all-document-balanced',coverage:result.coverage,embeddingModel:'',vectors:0,fused:false}};
+  }
   const topK = Math.max(1, Math.min(50, Number(options.topK) || 8));
   const pool = Math.max(topK * 4, 20);
   const bm25 = index.search(query, { topK: pool, docIds: options.docIds });

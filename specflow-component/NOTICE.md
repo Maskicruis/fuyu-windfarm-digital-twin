@@ -7,3 +7,5 @@
 核心文件与 UI 模块逐文件来源及 SHA256 见 UPSTREAM-BACKEND.json 和 ui-provenance.json。1.1.2 对解析、检索、回答模式和阅读器作适配：新增文字层快速提取、独立 OCR 队列、SQLite FTS5 索引、证据分支、PDF 分段读取与单实例后台服务；未修改模块和已适配模块分别登记，不能将整个组件称为逐字节未修改。Logo 与图标沿用原 SpecFlow，已获用户许可。
 
 MinerU 及其模型仍是扫描件 OCR 的外部运行依赖，需在设置中选择可执行文件。文字 PDF 使用 PDF.js；PDF.js 及 CMaps/standard_fonts 来源为 pdfjs-dist 6.3.289，保留 Apache-2.0 和各字体许可。此 EXE 包含 Electron/Node 和知识组件，不包含 OCR 模型。模型 API 设置、资料原件与会话保存在该组件自己的 workspace；API 密钥的存储行为沿用 SpecFlow 原版，请勿上传 workspace/data/settings.json。
+
+1.2.0 增加全库文档均衡召回、跨规范综合提示、覆盖统计和独立桌面启动修复。--background 是应用后台参数；兼容旧 --headless，但在 Chromium 初始化前移除该浏览器开关，防止原生窗口被禁用。

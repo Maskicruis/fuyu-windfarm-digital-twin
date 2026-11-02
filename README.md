@@ -11,7 +11,7 @@
 ## 两项交付
 
 1. `../扶余一号数字孪生/扶余一号数字孪生.exe`：展示前端、拖拽控制后台、设置、悬浮智能体及现有三维场景。
-2. `../知识与大模型独立组件/SpecFlow-Knowledge-Component-1.1.2-x64.exe`：[独立组件发布页](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/component-v1.1.2)。基于 SpecFlow 裁剪并增强文字层快速提取、独立 OCR、持久化 FTS 索引、三种回答模式和按页原文阅读。来源和适配模块分别登记在 `specflow-component/` 的 provenance 文件；见[使用说明](specflow-component/README.md)与[验收记录](docs/COMPONENT-1.1.2-VALIDATION.md)。主程序版本继续为 V0.9.4。
+2. `../知识与大模型独立组件/SpecFlow-Knowledge-Component-1.2.0-x64.exe`：[独立组件发布页](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/component-v1.2.0)。基于 SpecFlow 裁剪并增强文字层快速提取、独立 OCR、持久化 FTS 索引、三种回答模式和按页原文阅读。来源和适配模块分别登记在 `specflow-component/` 的 provenance 文件；见[使用说明](specflow-component/README.md)与[验收记录](docs/COMPONENT-1.2.0-VALIDATION.md)。主程序版本继续为 V0.9.4。
 
 ## 项目总览
 

@@ -46,13 +46,13 @@
     {
       "path": "src/rag.js",
       "upstream_sha256": "342d1dd799e0b80e3aec199571cb222db7a7789ac94240246a5d6e476ad11ab1",
-      "sha256": "8d7b6717f0a18a919a2f122331690ad30047741e012ea96348f26f72302defd3",
+      "sha256": "dbf7efb8223bde54df41b8a8a0cdfc50f2dc9ff38b25265be3ffcb24850e2350",
       "reason": "1.1: fast ingestion, persistent index and strict grounded chat"
     },
     {
       "path": "src/qa.js",
       "upstream_sha256": "21a6770efe5977fc1063063c9b6af2d4eaacf146b9954cc8dcb0bcbdd6f8325b",
-      "sha256": "edfe29efccfe3a68950ce4eb1bc3700973100f7778a9a214724c90ba1df9a3c2",
+      "sha256": "31a67aec4212d1c4cd669f2370f8db493dd6d7df0f2987a24a88018d3c9cafcf",
       "reason": "1.1: fast ingestion, persistent index and strict grounded chat"
     },
     {

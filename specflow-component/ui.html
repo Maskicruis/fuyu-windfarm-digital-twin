@@ -537,7 +537,7 @@ canvas{box-shadow:var(--shadow)}
           <div id="chatAttachments" class="chat-attachments" hidden aria-label="待发送的图片附件"></div><div id="chatAttachmentState" class="chat-attachment-state" aria-live="polite"></div>
           <textarea id="q" rows="2" aria-label="向知识库提问，可粘贴图片" placeholder="输入问题，或粘贴 / 拖入图片…"></textarea>
           <input id="chatImagePicker" type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden>
-          <div class="composer-tools"><button id="attachImageButton" class="chat-attach-btn" type="button" aria-label="添加图片" title="添加图片 · 可粘贴或拖入"><svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke-width="1.8" stroke-linecap="round"/></svg></button><select id="qMode" title="知识来源" aria-label="知识来源"><option value="auto">智能回答 · 有依据严格引用</option><option value="knowledge">严格规范 · 仅所选资料</option><option value="general">通用模型 · 不检索资料</option></select><select id="qScenario" title="问答场景" aria-label="问答场景"></select><select id="qScope" title="检索范围" aria-label="检索范围"></select><span class="composer-hint">Ctrl + V 图片 · Enter 发送</span><button id="sendQuestionButton" class="send-btn" data-act="ask" aria-label="发送问题" title="Enter 发送 · Shift + Enter 换行"><svg viewBox="0 0 24 24" fill="none"><path d="m5 12 14-7-5 14-2.5-5.5L5 12Z" stroke-width="1.8" stroke-linejoin="round"/><path d="m11.5 13.5 3-3" stroke-width="1.8" stroke-linecap="round"/></svg></button></div>
+          <div class="composer-tools"><button id="attachImageButton" class="chat-attach-btn" type="button" aria-label="添加图片" title="添加图片 · 可粘贴或拖入"><svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke-width="1.8" stroke-linecap="round"/></svg></button><select id="qMode" title="知识来源" aria-label="知识来源"><option value="auto">智能回答 · 全库优先</option><option value="knowledge">严格规范 · 全库查证</option><option value="general">通用模型 · 不检索资料</option></select><select id="qScenario" title="问答场景" aria-label="问答场景"></select><select id="qScope" title="检索范围" aria-label="检索范围"></select><span class="composer-hint">Ctrl + V 图片 · Enter 发送</span><button id="sendQuestionButton" class="send-btn" data-act="ask" aria-label="发送问题" title="Enter 发送 · Shift + Enter 换行"><svg viewBox="0 0 24 24" fill="none"><path d="m5 12 14-7-5 14-2.5-5.5L5 12Z" stroke-width="1.8" stroke-linejoin="round"/><path d="m11.5 13.5 3-3" stroke-width="1.8" stroke-linecap="round"/></svg></button></div>
         </div><div id="qState" class="muted qa-status" aria-live="polite"></div></div>
       </section>
       
@@ -862,10 +862,9 @@ async function loadQaMeta(){
 }
 function refreshScopeOptions(){
   var sc=document.getElementById('qScope'); if(!sc) return;
-  var selected=sc.value;
-  sc.innerHTML='<option value="all">全部文档</option><optgroup label="文件分组"><option value="group:">未分组</option>'+GROUPS.map(function(group){return '<option value="group:'+attr(group.id)+'">'+esc(group.name)+'（'+Number(group.documentCount||0)+'）</option>';}).join('')+'</optgroup><optgroup label="单个文档">'+DOCS.map(function(d){return '<option value="doc:'+attr(d.id)+'">'+esc(d.title)+'</option>';}).join('')+'</optgroup>';
-  if(Array.from(sc.options).some(function(x){return x.value===selected;})) sc.value=selected;
-  else sc.value='all';
+  var ready=DOCS.filter(function(d){return d.status==='ready';}).length;
+  sc.innerHTML='<option value="all">全部数据库 · '+ready+'/'+DOCS.length+' 份可检索</option>';
+  sc.value='all';sc.disabled=true;sc.title='始终全库协同检索；文档列表筛选和历史对话不会限制问答范围';
 }
 function scopePayload(value){
   var scope=String(value||'all');
@@ -888,8 +887,14 @@ function citationSourceLink(c){
 function answerHtml(text,citations){
   var list=Array.isArray(citations)?citations:[];
   var html=SpecFlowChatView.render(text,list,citationLink);
-  if(list.length) html+='<div class="answer-sources"><div class="answer-sources-title">参考来源 · 点击可跳转并高亮 PDF 原文</div><div class="answer-source-list">'+list.map(citationSourceLink).join('')+'</div></div>';
+  if(list.length) html+='<details class="answer-sources"><summary class="answer-sources-title">证据来源 · '+new Set(list.map(function(c){return c.docId;})).size+' 份规范 / '+list.length+' 条片段 · 展开原文</summary><div class="answer-source-list">'+list.map(citationSourceLink).join('')+'</div></details>';
   return html;
+}
+function showCoverage(turn,retrieval){
+  var c=retrieval&&retrieval.coverage;if(!c)return;
+  var box=turn.root.querySelector('.corpus-coverage');if(!box){box=document.createElement('div');box.className='corpus-coverage';box.style.cssText='padding:9px 12px;margin:9px 0;border:1px solid rgba(45,145,210,.25);border-radius:9px;background:rgba(45,145,210,.06);font-size:12px;line-height:1.8';turn.answer.before(box);}
+  var searched=Number(c.searchedDocuments||0),total=Number(c.totalDocuments||c.indexedDocuments||searched);
+  box.textContent=(c.scope==='selected'?'限定范围':'全库协同检索')+' · 已检索 '+searched+' / 全部 '+total+' 份 · 相关 '+Number(c.relatedDocuments||0)+' 份 · 证据覆盖 '+Number(c.evidenceDocuments||0)+' 份'+(c.pendingDocuments?' · '+Number(c.pendingDocuments)+' 份尚未解析，未参与本轮查证':'');
 }
 function citationCard(c){
   var href=c.sourceUrl||('/api/v1/documents/'+encodeURIComponent(c.docId)+'/source#page='+Number(c.page||1));
@@ -947,11 +952,10 @@ async function openConversation(id){
     var response=await api('v1/conversations/'+encodeURIComponent(id)); var record=response.data||response; var turns=Array.isArray(record.turns)?record.turns:[];
     CURRENT_CONVERSATION_ID=record.id; CHAT_HISTORY=[]; SpecFlowChatImages.clear(); document.getElementById('q').value=''; document.getElementById('chatMessages').innerHTML='';
     var empty=document.getElementById('assistantEmpty'); if(empty) empty.style.display=turns.length?'none':'block';
-    turns.forEach(function(item){ appendUserTurn(item.question||'',item.images||[],true); CHAT_HISTORY.push({role:'user',content:item.question||'',images:item.images||[]}); var turn=appendAssistantTurn(true); var text=item.answer||item.note||item.error||''; turn.note.textContent=assistantLabel(item)+(item.model?' · '+item.model:''); SpecFlowChatView.update(turn,text,item.citations||[],answerHtml,citationCard);SpecFlowChatView.setState(turn,'complete'); if(text) CHAT_HISTORY.push({role:'assistant',content:text}); });
+    turns.forEach(function(item){ appendUserTurn(item.question||'',item.images||[],true); CHAT_HISTORY.push({role:'user',content:item.question||'',images:item.images||[]}); var turn=appendAssistantTurn(true); var text=item.answer||item.note||item.error||''; turn.note.textContent=assistantLabel(item)+(item.model?' · '+item.model:'');showCoverage(turn,item.retrieval); SpecFlowChatView.update(turn,text,item.citations||[],answerHtml,citationCard);SpecFlowChatView.setState(turn,'complete'); if(text) CHAT_HISTORY.push({role:'assistant',content:text}); });
     if(record.retrievalMode) document.getElementById('qMode').value=record.retrievalMode;
     if(record.scenario) document.getElementById('qScenario').value=record.scenario;
-    var scope=record.groupId!==undefined&&record.groupId!==null?'group:'+record.groupId:(record.docIds&&record.docIds.length===1?'doc:'+record.docIds[0]:'all');
-    if(Array.from(document.getElementById('qScope').options).some(function(option){return option.value===scope;})) document.getElementById('qScope').value=scope;
+    document.getElementById('qScope').value='all';
     syncQaMode(); renderRecentConversations(); showPage('assistant'); scrollConversation(true); document.getElementById('q').focus();
   }catch(e){ alert('打开对话失败：'+e.message); }
 }
@@ -964,10 +968,10 @@ async function deleteConversation(id){
 function newChat(){
   if(QA_BUSY){ document.getElementById('qState').textContent='请等待当前回答完成后再新建对话。'; return; }
   SpecFlowChatImages.clear(); document.getElementById('q').value=''; document.getElementById('q').style.height='';
-  CURRENT_CONVERSATION_ID=''; CHAT_HISTORY=[]; CHAT_FOLLOW=true;syncChatJump();document.getElementById('chatMessages').innerHTML=''; document.getElementById('qState').textContent=''; renderRecentConversations();
+  CURRENT_CONVERSATION_ID=''; CHAT_HISTORY=[]; CHAT_FOLLOW=true;document.getElementById('qScope').value='all';syncChatJump();document.getElementById('chatMessages').innerHTML=''; document.getElementById('qState').textContent=''; renderRecentConversations();
   var empty=document.getElementById('assistantEmpty'); if(empty) empty.style.display='block'; showPage('assistant'); document.getElementById('q').focus();
 }
-function syncQaMode(){ var selected=document.getElementById('qMode').value;var hint=document.querySelector('.composer-hint');if(hint)hint.textContent=selected==='general'?'不检索资料 · 连续对话':selected==='knowledge'?'只依资料回答 · 无依据不补充':'命中资料严格引用 · 无命中转通用';var general=document.getElementById('qMode').value==='general'; var scope=document.getElementById('qScope'); if(scope){scope.disabled=general;scope.title=general?'通用对话不检索资料库':'检索范围';} }
+function syncQaMode(){ var selected=document.getElementById('qMode').value;var hint=document.querySelector('.composer-hint');if(hint)hint.textContent=selected==='general'?'不检索资料 · 连续对话':selected==='knowledge'?'只依资料回答 · 无依据不补充':'命中资料严格引用 · 无命中转通用';var general=document.getElementById('qMode').value==='general'; var scope=document.getElementById('qScope'); if(scope){scope.disabled=true;scope.title=general?'通用模型不检索资料':'全库协同检索，不受历史对话或列表筛选影响';} }
 async function askQuestion(){
   if(QA_BUSY) return;
   if(!SpecFlowChatImages.ready()) return;
@@ -990,23 +994,23 @@ async function askQuestion(){
   function renderStream(){renderPending=false;SpecFlowChatView.update(turn,text,citations,answerHtml,citationCard);scrollConversation();}
   function scheduleRender(){if(!renderPending){renderPending=true;requestAnimationFrame(function(){if(streamActive)renderStream();});}}
   try{
-    var payload={question:q,images:images.map(function(image){return image.id;}),scenario:scenario,retrievalMode:retrievalMode,conversationId:CURRENT_CONVERSATION_ID||undefined}; if(retrievalMode!=='general') Object.assign(payload,scopePayload(scope));
+    var payload={question:q,images:images.map(function(image){return image.id;}),scenario:scenario,retrievalMode:retrievalMode,searchScope:'all',conversationId:CURRENT_CONVERSATION_ID||undefined};
     var r=await fetch('/api/v1/ask/stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:QA_CONTROLLER.signal});
     if(!r.ok){var body=await r.json().catch(function(){return {};});throw new Error(body.error&&body.error.message||'流式请求失败 HTTP '+r.status);}
     await SpecFlowStream.json(r,function(event){
       if(event.type==='error') throw new Error(event.error||'模型生成失败');
       if(event.type==='phase'){turn.note.textContent=event.message||'处理中…';document.getElementById('qState').textContent=turn.note.textContent;}
-      if(event.type==='citations'){citations=event.citations||[];scheduleRender();}
+      if(event.type==='citations'){citations=event.citations||[];showCoverage(turn,event.retrieval);scheduleRender();}
       if(event.type==='reasoning'){reasoning+=event.text||'';turn.reasoning.hidden=false;turn.reasoningText.textContent=reasoning;}
       if(event.type==='delta'){text+=event.text||'';turn.note.textContent='正在生成回答…';SpecFlowChatView.setState(turn,'streaming');scheduleRender();}
-      if(event.type==='done'){result=event;text=event.answer||event.note||text;citations=event.citations||citations;renderStream();}
+      if(event.type==='done'){result=event;text=event.answer||event.note||text;citations=event.citations||citations;showCoverage(turn,event.retrieval);renderStream();}
       if(event.type==='saved'){CURRENT_CONVERSATION_ID=event.conversationId;saved=true;}
     });
     if(!result||!saved) throw new Error('连接中断，完整回答或会话保存确认未收到。');
     var d=result; d.citations=citations;
     var n=(d.citations||[]).length;
     var label=d.mode==='clarification'?'需要补充信息':d.mode==='empty'?'资料不足 · 未生成规范结论':d.grounding==='general'?'通用模型回答':(d.mode==='retrieval'?'资料检索结果':'依据规范资料回答');
-    document.getElementById('qState').textContent=label+(n?' · 引用 '+n+' 条':'')+(d.retrieval?.durationMs!=null?' · 检索 '+d.retrieval.durationMs+' ms':'');
+    document.getElementById('qState').textContent=label+(d.retrieval?.coverage?' · 全库已检索 '+d.retrieval.coverage.searchedDocuments+' 份':'')+(n?' · 依据 '+new Set((d.citations||[]).map(function(c){return c.docId;})).size+' 份规范':'')+(d.retrieval?.durationMs!=null?' · 检索 '+d.retrieval.durationMs+' ms':'');
     turn.note.textContent=label+(d.model?' · '+d.model:'')+(d.timings?.firstTokenMs!=null?' · 首字 '+(d.timings.firstTokenMs/1000).toFixed(2)+' s':''); SpecFlowChatView.update(turn,text,d.citations||[],answerHtml,citationCard);SpecFlowChatView.setState(turn,'complete');
     if(d.warning){turn.note.textContent+=' · '+d.warning;document.getElementById('qState').textContent=d.warning;}
     CHAT_HISTORY.push({role:'user',content:q,images:images}); if(text) CHAT_HISTORY.push({role:'assistant',content:text}); scrollConversation(); loadConversations();

@@ -3,19 +3,23 @@ const {app,BrowserWindow,ipcMain,dialog,shell}=require('electron');
 const fs=require('node:fs'),path=require('node:path');
 const {DataLock}=require('./data-lock.cjs');
 const args=process.argv.slice(1),value=name=>{const i=args.indexOf(name);return i>=0?args[i+1]:null;};
+const headless=args.includes('--background')||args.includes('--headless');
+// --headless is also a Chromium flag. Keep its legacy service meaning without
+// disabling native windows for the lifetime of a background host.
+app.commandLine.removeSwitch('headless');
 const portable=process.env.PORTABLE_EXECUTABLE_DIR||(app.isPackaged?path.dirname(app.getPath('exe')):path.resolve(__dirname,'..'));
 const data=path.resolve(value('--data-dir')||path.join(portable,'workspace','data'));
 fs.mkdirSync(data,{recursive:true});
 process.env.KB_ROOT=path.resolve(__dirname,'..');process.env.KB_DATA_DIR=data;
-app.setPath('userData',path.join(path.dirname(data),'desktop-profile'));
-const headless=args.includes('--headless');let window=null,backend=null,serviceUrl='',opening=null,shuttingDown=false;
+app.setPath('userData',path.join(path.dirname(data),headless?'desktop-profile-service':'desktop-profile-ui'));
+let window=null,backend=null,serviceUrl='',opening=null,shuttingDown=false;
 const ownerLock=new DataLock(data);process.on('exit',()=>ownerLock.release());
 async function openWindow(){
  if(opening)return opening;
  if(window){if(window.isMinimized())window.restore();window.show();window.focus();return window;}
  if(!serviceUrl)return null;
  opening=(async()=>{
-  window=new BrowserWindow({title:'SpecFlow 知识组件',width:1500,height:940,minWidth:1000,minHeight:680,frame:false,backgroundColor:'#101317',icon:path.join(__dirname,'../build/app.ico'),webPreferences:{preload:path.join(__dirname,'preload.cjs'),nodeIntegration:false,contextIsolation:true,sandbox:true}});
+  window=new BrowserWindow({title:'SpecFlow 知识组件 · 独立版',width:1500,height:940,minWidth:1000,minHeight:680,frame:false,backgroundColor:'#101317',icon:path.join(__dirname,'../build/app.ico'),webPreferences:{preload:path.join(__dirname,'preload.cjs'),nodeIntegration:false,contextIsolation:true,sandbox:true}});
   window.webContents.setWindowOpenHandler(({url:target})=>{if(/^https?:\/\//i.test(target))shell.openExternal(target);return{action:'deny'};});
   window.webContents.on('will-navigate',(event,target)=>{if(!target.startsWith(serviceUrl)){event.preventDefault();if(/^https?:\/\//i.test(target))shell.openExternal(target);}});
   for(const event of ['maximize','unmaximize'])window.on(event,()=>window?.webContents.send('window:maximized',window.isMaximized()));
@@ -28,7 +32,7 @@ async function openWindow(){
 if(!app.requestSingleInstanceLock())app.quit();
 else{
  let showWhenReady=!headless;
- app.on('second-instance',(_event,argv)=>{if(!argv.includes('--headless')){showWhenReady=true;openWindow().catch(()=>{});}});
+ app.on('second-instance',(_event,argv)=>{if(!argv.includes('--headless')&&!argv.includes('--background')){showWhenReady=true;openWindow().catch(()=>{});}});
  app.whenReady().then(async()=>{
   const ownsData=ownerLock.acquire();
   let requested=0,port=0,url='';

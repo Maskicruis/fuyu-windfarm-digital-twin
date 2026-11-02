@@ -358,7 +358,8 @@ class KnowledgeBaseService {
     return this.settings;
   }
 
-  deps() { return { rag: this.rag, settings: this.settings, embeddings }; }
+  deps() { return { rag: this.rag, settings: this.settings, embeddings, corpusStatus:()=>this.corpusStatus() }; }
+  corpusStatus(){const indexed=new Set((this.rag.docs||[]).map(d=>d.id));return {totalDocuments:this.documents.length,indexedDocuments:indexed.size,pendingDocuments:this.documents.filter(d=>!indexed.has(d.id)).length};}
 
   search(query, options = {}) {
     const queryPlan = planQuery(query);
@@ -433,6 +434,7 @@ class KnowledgeBaseService {
   async shutdown() { this.shuttingDown=true;this.queue.pending=[];this.ocrQueue.pending=[];await Promise.all([this.rag.close?.(),stopParsing()]); }
 
   resolveDocumentIds(payload = {}) {
+    if(payload.searchScope==='all')return null;
     if (Array.isArray(payload.docIds)) return payload.docIds.map(String);
     if (Object.prototype.hasOwnProperty.call(payload, 'groupId')) {
       const groupId = this.validGroupId(payload.groupId);
@@ -637,6 +639,7 @@ class KnowledgeBaseService {
       scenarioId: payload.scenario,
       topK: payload.topK,
       docIds: this.resolveDocumentIds(payload),
+      searchScope:payload.searchScope,
       retrievalMode: payload.retrievalMode,
       images: modelImages,
       history
@@ -656,8 +659,8 @@ class KnowledgeBaseService {
       retrievalMode: result.retrievalMode || 'auto',
       grounding: result.grounding || '',
       durationMs: Date.now() - started,
-      groupId: Object.prototype.hasOwnProperty.call(payload, 'groupId') ? String(payload.groupId || '') : null,
-      docIds: Array.isArray(payload.docIds) ? payload.docIds.map(String) : []
+      groupId: payload.searchScope==='all'?null:Object.prototype.hasOwnProperty.call(payload, 'groupId') ? String(payload.groupId || '') : null,
+      docIds: payload.searchScope==='all'?[]:Array.isArray(payload.docIds) ? payload.docIds.map(String) : []
     }, payload.conversationId);
     return Object.assign({ conversationId, question, images }, result);
   }
@@ -674,6 +677,7 @@ class KnowledgeBaseService {
       scenarioId: payload.scenario,
       topK: payload.topK,
       docIds: this.resolveDocumentIds(payload),
+      searchScope:payload.searchScope,
       retrievalMode: payload.retrievalMode,
       images: modelImages,
       signal: options.signal,
@@ -685,7 +689,7 @@ class KnowledgeBaseService {
       emit(event);
     });
     if (mode && !options.signal?.aborted) {
-      const conversationId = this.recordConversation({ question, images, imageContext, model, scenario: payload.scenario || 'design', mode, answer, citations, retrieval, queryPlan, retrievalMode, grounding, durationMs: Date.now() - started, groupId: Object.prototype.hasOwnProperty.call(payload, 'groupId') ? String(payload.groupId || '') : null, docIds: Array.isArray(payload.docIds) ? payload.docIds.map(String) : [] }, payload.conversationId);
+      const conversationId = this.recordConversation({ question, images, imageContext, model, scenario: payload.scenario || 'design', mode, answer, citations, retrieval, queryPlan, retrievalMode, grounding, durationMs: Date.now() - started, groupId: payload.searchScope==='all'?null:Object.prototype.hasOwnProperty.call(payload, 'groupId') ? String(payload.groupId || '') : null, docIds: payload.searchScope==='all'?[]:Array.isArray(payload.docIds) ? payload.docIds.map(String) : [] }, payload.conversationId);
       emit({ type: 'saved', conversationId });
     }
   }
@@ -716,6 +720,7 @@ class KnowledgeBaseService {
       retrieval: { default: 'sqlite-fts5', hybrid: embeddings.isConfigured(this.settings.llm) ? 'available' : 'requires embeddingModel' },
       conversations: this.conversations.length,
       index: this.rag.status(),
+      corpus:this.corpusStatus(),
       queue: this.queue.snapshot(),
       ocrQueue: this.ocrQueue.snapshot()
     };
