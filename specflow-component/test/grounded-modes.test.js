@@ -3,6 +3,13 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const {SqliteRagIndex}=require('../src/sqlite-rag');
 const {ask,askStream,filterEvidence,checkCitations}=require('../src/qa');
 const {createStubLlm}=require('./stub-llm-server');
+test('native page numbers cannot become anchors for a clause on the following page',async()=>{
+ const {classifyLine}=require('../src/native-text-layout');
+ assert.equal(classifyLine('27',[.49,.93,.51,.94]),'page_number');
+ assert.equal(classifyLine('27',[.49,.50,.51,.51]),'text');
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'component-footer-'));let index;
+ try{fs.mkdirSync(path.join(root,'book'));fs.writeFileSync(path.join(root,'book/document.json'),JSON.stringify({document:{id:'book',title:'规范'},pages:[{number:37},{number:38}],items:[{id:'footer',page:37,order:0,type:classifyLine('27',[.49,.93,.51,.94]),text:'27'},{id:'clause',page:38,order:1,type:'text',text:'5 当气温低于5℃时，应采取保温养护措施，不得向混凝土表面洒水。',bbox:{normalized:[.15,.07,.85,.11]}}]}));index=new SqliteRagIndex({library:root});await index.refresh();const hit=index.search('低于 保温 养护',{topK:1})[0];assert.equal(hit.page,38);assert.equal(hit.itemId,'clause');assert.equal(hit.bboxNormalized[1],.07);assert.equal(index.loaded,1);}finally{await index?.close();fs.rmSync(root,{recursive:true,force:true,maxRetries:20,retryDelay:50});}
+});
 test('incidental shared words do not establish evidence and invented citations fail closed',()=>{
  assert.deepEqual(filterEvidence([{title:'建筑电气工程施工质量验收规范',snippet:'发生过玻璃罩溅落的事件。'}],'黑洞的事件视界是什么？'),[]);
  assert.match(checkCitations('需要 28 天。[99]',[{n:1}]),/未通过/);

@@ -1,12 +1,12 @@
-# SpecFlow 知识组件 1.1.0
+# SpecFlow 知识组件 1.1.1
 
 独立运行的文件存储、PDF 解析、规范检索、连续问答与原文阅读组件。基于 SpecFlow 0.11.1 裁剪，并针对批量规范处理作适配；保留 SpecFlow 图标、流式客户端、会话渲染及引用数据契约。
 
-[下载 EXE 与快速入门](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/component-v1.1.0) · [接入接口](integration/README.md) · [本机验收记录](../docs/COMPONENT-1.1.0-VALIDATION.md)
+[下载 EXE 与快速入门](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/component-v1.1.1) · [接入接口](integration/README.md) · [本机验收记录](../docs/COMPONENT-1.1.1-VALIDATION.md)
 
 ## 开始使用
 
-1. 将 `SpecFlow-Knowledge-Component-1.1.0-x64.exe` 放在有写入权限的目录，双击启动。升级原组件时放回原目录，保留 `workspace`。
+1. 将 `SpecFlow-Knowledge-Component-1.1.1-x64.exe` 放在有写入权限的目录，双击启动。升级原组件时放回原目录，保留 `workspace`。
 2. 左侧「设置 → 模型接口」填写兼容 Chat Completions 的接口地址、模型名与密钥，点击保存。修改地址或模型时，密钥留空会保留已保存的值；清除密钥需使用单独按钮。
 3. 打开「文档数据库」，选择分组后上传 PDF；桌面版也可点击「导入文件夹」批量导入。重复导入同一文件夹会按源路径、大小与修改时间跳过未变文件。
 4. 文字 PDF 优先快速提取，扫描件交给独立 OCR 队列。文件显示「已入库」后才进入检索范围；未完成解析时也可阅读原 PDF。

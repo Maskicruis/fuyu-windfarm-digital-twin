@@ -2,6 +2,7 @@
 const {parentPort,workerData}=require('node:worker_threads');
 const fs=require('node:fs'),path=require('node:path');
 const {pathToFileURL}=require('node:url');
+const {classifyLine}=require('./native-text-layout');
 (async()=>{
  // PDF.js 6 also runs in the bundled Node 24 test runtime.
  if(!Uint8Array.prototype.toHex)Uint8Array.prototype.toHex=function(){return Buffer.from(this).toString('hex');};
@@ -20,7 +21,7 @@ const {pathToFileURL}=require('node:url');
    const id='p'+String(number).padStart(4,'0')+'-i'+String(items.length).padStart(6,'0');ids.push(id);
    const normalized=[row.x0/v.width,row.y0/v.height,row.x1/v.width,row.y1/v.height].map(n=>Math.max(0,Math.min(1,n)));
    const a=v.convertToPdfPoint(row.x0,row.y0),b=v.convertToPdfPoint(row.x1,row.y1);
-   items.push({id,page:number,order:items.length,type:'text',text,bbox:{normalized,pdf:[Math.min(a[0],b[0]),Math.min(a[1],b[1]),Math.max(a[0],b[0]),Math.max(a[1],b[1])]}});chars+=text.length;
+   items.push({id,page:number,order:items.length,type:classifyLine(text,normalized),text,bbox:{normalized,pdf:[Math.min(a[0],b[0]),Math.min(a[1],b[1]),Math.max(a[0],b[0]),Math.max(a[1],b[1])]}});chars+=text.length;
   }
   pages.push({number,width:v.width,height:v.height,items:ids});page.cleanup();parentPort.postMessage({progress:Math.round(number/pdf.numPages*100)});
  }

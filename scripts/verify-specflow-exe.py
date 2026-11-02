@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parent.parent
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--exe', type=Path, default=ROOT/'specflow-component/release/SpecFlow-Knowledge-Component-1.1.0-x64.exe')
+    parser.add_argument('--exe', type=Path, default=ROOT/'specflow-component/release/SpecFlow-Knowledge-Component-1.1.1-x64.exe')
     parser.add_argument('--pdf', type=Path, help='Optional local text PDF for real upload/index/range checks; never published')
     args = parser.parse_args()
     area = ROOT/'开发源码/验收产物/specflow-package-proof-v110'
@@ -129,6 +129,10 @@ def main():
             hits=request(base,'/api/v1/search?q='+urllib.parse.quote('混凝土养护')+'&doc='+doc_id)['hits']
             assert hits and hits[0]['bboxNormalized'],hits
             hit=hits[0]
+            if '10906' in args.pdf.name:
+                target=request(base,'/api/v1/search?q='+urllib.parse.quote('气温低于 保温养护 不得洒水')+'&doc='+doc_id)['hits'][0]
+                assert target['page']==38,target
+                assert target['bboxNormalized'][1]<.20,target
             page_url=base+'/api/view?id='+doc_id+'&page='+str(hit['page'])
             with urllib.request.urlopen(page_url,timeout=5) as response:
                 assert json.load(response)['items']
