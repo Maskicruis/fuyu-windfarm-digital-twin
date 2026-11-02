@@ -18,7 +18,9 @@ function readJson(file, fallback = null) {
 
 function writeJson(file, value) {
   ensureDir(path.dirname(file));
-  fs.writeFileSync(file, JSON.stringify(value, null, 2) + '\n', 'utf8');
+  const temporary=file+'.'+require('node:crypto').randomUUID()+'.tmp';
+  try{fs.writeFileSync(temporary,JSON.stringify(value,null,2)+'\n','utf8');fs.renameSync(temporary,file);}
+  finally{try{fs.unlinkSync(temporary);}catch(error){if(error.code!=='ENOENT')throw error;}}
 }
 
 function safeName(value) {

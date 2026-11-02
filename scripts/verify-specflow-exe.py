@@ -10,16 +10,17 @@ import threading
 import time
 import urllib.request
 import urllib.parse
+import uuid
 
 ROOT = Path(__file__).resolve().parent.parent
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--exe', type=Path, default=ROOT/'specflow-component/release/SpecFlow-Knowledge-Component-1.1.1-x64.exe')
+    parser.add_argument('--exe', type=Path, default=ROOT/'specflow-component/release/SpecFlow-Knowledge-Component-1.1.2-x64.exe')
     parser.add_argument('--pdf', type=Path, help='Optional local text PDF for real upload/index/range checks; never published')
     args = parser.parse_args()
-    area = ROOT/'开发源码/验收产物/specflow-package-proof-v110'
+    area = ROOT/'开发源码/验收产物'/('specflow-package-proof-'+uuid.uuid4().hex[:8])
     area.mkdir(parents=True, exist_ok=True)
     executable = area/args.exe.name
     shutil.copy2(args.exe, executable)
@@ -61,7 +62,7 @@ def main():
         for _ in range(90):
             try:
                 r = json.loads(record.read_text('utf-8'))
-                if Path(r['data']).resolve() == data.resolve():
+                if Path(r['data']).resolve() == data.resolve() and r['version']==json.loads((ROOT/'specflow-component/package.json').read_text('utf-8'))['version']:
                     with urllib.request.urlopen('http://127.0.0.1:'+str(r['port'])+'/api/v1/health', timeout=1) as response:
                         assert response.status == 200
                     return r
@@ -145,9 +146,13 @@ def main():
             try:
                 other.wait(timeout=120)
                 assert json.loads(record.read_text('utf-8'))['pid']==service['pid']
+                asset=urllib.request.Request(base+'/lib/pdf.worker.min.mjs',headers={'Range':'bytes=0-255'})
+                with urllib.request.urlopen(asset,timeout=10) as response:
+                    assert response.status==206 and len(response.read())==256
             finally:
                 if other.poll() is None:subprocess.run(['taskkill','/PID',str(other.pid),'/T','/F'],capture_output=True)
         stop()
+        record.unlink(missing_ok=True)
         process=start([])
         service=wait_service()
         assert service['port']==38910

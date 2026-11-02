@@ -3,10 +3,6 @@
   "commit": "b076c50fe5df28c628f97b5eafa052c1dff0188b",
   "byte_identical_core": [
     {
-      "path": "src/utils.js",
-      "sha256": "6788d33b27b1693542863468230aac8ff465eeb9fb203006dc1ecb238e7e14bc"
-    },
-    {
       "path": "src/job-queue.js",
       "sha256": "67f04f67310409e59b733fb460dd549c8e3a554c5cbaba546f9ca1ea48f0fd27"
     },
@@ -70,6 +66,12 @@
       "sha256": "e4a510069948265e64227d0deb86f4d4dd8fd7b462a0ac5a1e2de91691a31aa5",
       "upstream_sha256": "82cc6e03ed3f693d3eab1599e92f7ac9b85ed6b88423372b79fa72eae2678d13",
       "reason": "1.1.0: native text pass, persistent FTS, strict answering policy and background service lifecycle adaptation"
+    },
+    {
+      "path": "src/utils.js",
+      "sha256": "22cbc8906e6456c415ab2485fd629efee31ab4338af2ddc7c087a19ad8dab6f0",
+      "upstream_sha256": "6788d33b27b1693542863468230aac8ff465eeb9fb203006dc1ecb238e7e14bc",
+      "reason": "Atomic JSON replacement protects document records, settings and conversation data on interrupted writes."
     }
   ]
 }

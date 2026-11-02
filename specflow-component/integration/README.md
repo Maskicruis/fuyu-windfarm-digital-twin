@@ -3,7 +3,7 @@
 EXE 独立运行文件存储、MinerU 解析队列、分组、检索、会话、模型设置及原文阅读器。原项目的 `/api/v1` 和 schema 契约保留，能力发现见 `/api/v1/capabilities`。服务绑定 127.0.0.1；运行端口写在 EXE 同目录 `workspace/data/component-service.json`。默认 8790，冲突时自动选择空闲端口。
 
 ```powershell
-.\SpecFlow-Knowledge-Component-1.1.1-x64.exe --headless --data-dir "G:\其他项目\知识数据" --port 8791
+.\SpecFlow-Knowledge-Component-1.1.2-x64.exe --headless --data-dir "G:\其他项目\知识数据" --port 8791
 ```
 
 `--data-dir` 是包含 settings.json、documents.json 等文件的直接数据目录。各项目使用不同目录；API 设置与历史会话在重启后沿用。同一数据目录只启动一个后台服务；后台模式运行时再次双击同目录 EXE 会打开已有服务的窗口。后台模式关闭窗口仍继续解析；普通双击启动时关闭窗口会退出并保留队列。
