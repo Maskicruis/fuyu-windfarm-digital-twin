@@ -182,6 +182,8 @@ button{color:inherit}
 @keyframes parse-pulse{0%{transform:translateX(-100%)}100%{transform:translateX(250%)}}
 @media(prefers-reduced-motion:reduce){.bar.indeterminate>div{animation:none}}
 .logline{font:10px Consolas,'Microsoft YaHei',monospace;color:var(--text-3);margin-top:4px;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.task-info{max-width:250px;min-width:180px;white-space:normal;line-height:1.6;margin-top:6px;font-size:11px;color:var(--text-2)}
+.task-info small{display:block;color:var(--text-3);font-size:10px}
 input,select{min-height:34px;background:var(--surface-2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:6px 9px;font-size:11px;outline:none}
 input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 select{cursor:pointer}
@@ -495,7 +497,7 @@ canvas{box-shadow:var(--shadow)}
 #modal.reader-paged .edbtn,#modal.reader-paged [data-act=edittbl],#modal.reader-paged [data-act=fixsav]{display:none}
 </style><link rel="stylesheet" href="/app/brand-theme.css"><link rel="stylesheet" href="/app/chat-images.css"><link rel="stylesheet" href="/app/chat-view.css"></head><body>
 <div class="desktop-titlebar" aria-label="应用标题栏">
-  <div class="title-brand"><div class="brand-mark" aria-hidden="true"><img src="/brand/specflow-mark.svg" alt=""></div><div class="title-copy"><strong>SpecFlow Knowledge Component</strong><small>Files · Parsing · LLM</small></div></div>
+  <div class="title-brand"><div class="brand-mark" aria-hidden="true"><img src="/brand/specflow-mark.svg" alt=""></div><div class="title-copy"><strong>SpecFlow Knowledge Component</strong><small>Files · Parsing · LLM · <span id="componentVersion"></span></small></div></div>
   <div class="desktop-runtime"><span class="pulse"></span><span id="desktopRuntime">正在启动本地服务…</span></div>
   <div class="title-actions">
     <button id="modelTitleButton" class="title-tool title-model" data-scroll="settingsSection" title="配置独立 LLM 模型"><svg viewBox="0 0 24 24" fill="none"><path d="M7 5.5h10A2.5 2.5 0 0 1 19.5 8v8A2.5 2.5 0 0 1 17 18.5H7A2.5 2.5 0 0 1 4.5 16V8A2.5 2.5 0 0 1 7 5.5Z" stroke-width="1.6"/><path d="M8 10h8M8 14h5" stroke-width="1.6" stroke-linecap="round"/></svg><span id="modelTitleLabel">模型 …</span></button>
@@ -633,7 +635,8 @@ function safeTableHtml(raw){
 function showParserState(health){
   var info=health&&health.mineru;
   [document.getElementById('parserState'),document.getElementById('databaseParserState')].filter(Boolean).forEach(function(el){
-    if(info&&info.available){ el.className='parser-state ok'; el.textContent=info.bundled?'✓ 内置离线解析已就绪 · 中文OCR / 版面 / 表格 · CPU，无需安装其他引擎':'✓ 可用：'+info.command; }
+    if(info&&info.blockedReason){el.className='parser-state bad';el.textContent=info.blockedReason;}
+    else if(info&&info.available){ el.className='parser-state ok'; el.textContent=info.bundled?'✓ 内置离线解析已就绪 · 支持页数进度、检查点恢复与停滞检测':'✓ 可用：'+info.command; }
     else { el.className='parser-state bad'; el.textContent='✗ 尚未安装或配置 MinerU'; }
   });
 }
@@ -654,6 +657,7 @@ async function load(){
   try{
     var all=await Promise.all([api('settings'),api('documents'),api('health'),api('v1/groups')]); var s=all[0],d=all[1],h=all[2],g=all[3];
     hydrateSettings(s.settings);
+    document.getElementById('componentVersion').textContent='V'+h.version;
     showParserState(h); DOCS=d.docs; GROUPS=((g.data||g).items)||[];
     if(ACTIVE_GROUP!=='all'&&ACTIVE_GROUP!==''&&!GROUPS.some(function(group){return group.id===ACTIVE_GROUP;})) ACTIVE_GROUP='all';
     document.getElementById('stats').textContent='已索引 '+DOCS.filter(function(x){return x.status==='ready';}).length+' / '+DOCS.length+' · 后台处理 '+DOCS.filter(function(x){return x.status==='queued'||x.status==='parsing';}).length+' · '+(h.index?.engine||'索引准备中');
@@ -703,17 +707,19 @@ function render(){
   var count=document.getElementById('dbCount'); if(count) count.textContent=docs.length+' / '+DOCS.length+' 份文档';
   if(!docs.length){ el.innerHTML='<tr><td colspan="5" class="empty-state">'+(keyword?'当前分组没有匹配的文档。':'当前分组暂无文档。可在文档的分组菜单中归类，或直接导入。')+'</td></tr>'; return; }
   el.innerHTML=docs.map(function(d){
-    var status=zh(d.status);
-    if(d.status==='parsing'){ var indeterminate=d.progressMode==='indeterminate'||d.parseStage==='ocr'; status+=' <span class="bar'+(indeterminate?' indeterminate':'')+'"><div style="width:'+(indeterminate?40:Math.min(99,d.progress||0))+'%"></div></span> '+(indeterminate?esc(d.progressText||'OCR 处理中…'):Math.min(99,d.progress||0)+'%');
-      var lines=String(d.logTail||'').split(/\r|\n/).filter(Boolean); var last=lines.length?lines[lines.length-1]:'';
-      if(last) status+='<div class="logline">'+esc(last.replace(/\x1b\[[0-9;]*m/g,''))+'</div>';
+    var status=zh(d.status),taskDetails='';
+    if(d.status==='parsing'){ var indeterminate=d.progressMode==='indeterminate'; status+=' <span class="bar'+(indeterminate?' indeterminate':'')+'"><div style="width:'+(indeterminate?40:Math.min(99,d.progress||0))+'%"></div></span>';
+      var a=d.parserActivity||{}, elapsed=Math.max(0,Math.floor((Date.now()-Date.parse(d.startedAt||d.updatedAt))/1000)),quiet=a.lastOutputAt?Math.max(0,Math.floor((Date.now()-a.lastOutputAt)/1000)):0;
+      var pages=a.total?'已完成 '+(a.completed||0)+' / '+a.total+' 页':'正在读取文档与加载模型';
+      var current=a.currentStart&&a.currentEnd?' · 当前 '+a.currentStart+'—'+a.currentEnd+' 页':'';
+      taskDetails='<div class="task-info">'+esc(d.progressText||'OCR 处理中')+'<small>'+esc(pages+current)+'</small><small>已用 '+Math.floor(elapsed/60)+'分'+elapsed%60+'秒 · '+(quiet<15?'引擎正在工作':quiet+'秒无新输出，监测中')+'</small>'+(a.checkpointPages?'<small>已保存 '+a.checkpointPages+' 页检查点</small>':'')+(a.checkpointWarning?'<small class="bad">'+esc(a.checkpointWarning)+'</small>':'')+'</div>';
     }
     if(d.status==='queued'){ status+=' · '+esc(d.progressText||'排队'); }
     if(d.status==='ready')status+=' · '+(d.parser==='pdf-text'?'文字层':'OCR');
     var err=d.error?'<div class="muted bad">'+esc(d.error.slice(0,140))+'</div>':'';
     var size=(d.pages||0)+'页 / '+(d.images||0)+'图 / '+(d.chars||0)+'字';
     var sc=d.status==='ready'?'status-ready':(d.status==='error'?'status-error':((d.status==='parsing'||d.status==='queued')?'status-active':''));
-    return '<tr><td><div class="doc-cell"><span class="doc-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M7 3.5h7l4 4V20H7V3.5Z" stroke-width="1.5"/><path d="M14 4v4h4M9.5 12h6M9.5 15h5" stroke-width="1.5" stroke-linecap="round"/></svg></span><div><div class="doc-title">'+esc(d.title)+'</div>'+err+'</div></div></td><td><select class="doc-group-select" data-doc-group="'+attr(d.id)+'" aria-label="设置 '+attr(d.title)+' 的分组">'+groupOptions(d.groupId||'',false)+'</select></td><td><span class="status-pill '+sc+'">'+status+'</span></td><td class="muted">'+size+'</td><td>'+
+    return '<tr><td><div class="doc-cell"><span class="doc-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M7 3.5h7l4 4V20H7V3.5Z" stroke-width="1.5"/><path d="M14 4v4h4M9.5 12h6M9.5 15h5" stroke-width="1.5" stroke-linecap="round"/></svg></span><div><div class="doc-title">'+esc(d.title)+'</div>'+err+'</div></div></td><td><select class="doc-group-select" data-doc-group="'+attr(d.id)+'" aria-label="设置 '+attr(d.title)+' 的分组">'+groupOptions(d.groupId||'',false)+'</select></td><td><span class="status-pill '+sc+'">'+status+'</span>'+taskDetails+'</td><td class="muted">'+size+'</td><td>'+
       '<button class="btn" data-act="read" data-id="'+attr(d.id)+'" '+''+'>阅读原文</button> '+
       '<button class="btn" data-act="reparse" data-id="'+attr(d.id)+'">重解析</button></td></tr>';
   }).join('');

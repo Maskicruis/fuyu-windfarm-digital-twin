@@ -1,14 +1,14 @@
-# SpecFlow 知识组件 1.3.0 · 规范与离线解析完整版
+# SpecFlow 知识组件 1.3.1 · 规范与离线解析完整版
 
 独立运行的文件存储、PDF 解析、规范检索、连续问答与原文阅读组件。基于 SpecFlow 0.11.1 裁剪，并针对批量规范处理作适配；保留 SpecFlow 图标、流式客户端、会话渲染及引用数据契约。
 
-[下载 EXE、资源与快速入门](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/component-v1.3.0) · [接入接口](integration/README.md)
+[下载 EXE、资源与快速入门](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/component-v1.3.1) · [接入接口](integration/README.md)
 
 完整版预置「施工验收规范」71 份 PDF 原件、已解析内容与持久化索引，以及独立 CPython 3.12.7、MinerU 3.4.5、CPU PyTorch、中文 OCR、版面和表格模型。无需另装 Python、MinerU 或下载默认解析模型。
 
 ## 开始使用
 
-1. 将 `SpecFlow-Knowledge-Component-1.3.0-x64.exe` 放在有写入权限、至少约 8 GB 空余的目录，双击启动。首次自动下载资源、校验 SHA256 并解压；之后直接打开。离线部署时，从同一 Release 下载全部 `SpecFlow-1.3.0-Resources-*.zip` 和 `resources-manifest.json`，与 EXE 放在一起再启动，无需手动解压。保留 `workspace`，可沿用 API 配置与会话。
+1. 将 `SpecFlow-Knowledge-Component-1.3.1-x64.exe` 放在有写入权限、至少约 10 GB 空余的目录，双击启动。首次自动下载资源、校验 SHA256 并解压；之后直接打开。离线部署时，从[基础资源 Release（1.3.0）](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/component-v1.3.0) 下载全部 `SpecFlow-1.3.0-Resources-*.zip` 和 `resources-manifest.json`，与 EXE 放在一起再启动，无需手动解压。保留 `workspace`，可沿用 API 配置与会话。
 2. 左侧「设置 → 模型接口」填写兼容 Chat Completions 的接口地址、模型名与密钥，点击保存。修改地址或模型时，密钥留空会保留已保存的值；清除密钥需使用单独按钮。
 3. 打开「文档数据库」，选择分组后上传 PDF；桌面版也可点击「导入文件夹」批量导入。重复导入同一文件夹会按源路径、大小与修改时间跳过未变文件。
 4. 首次启动自动登记全部预置规范；已预解析文件可立即检索，其余自动进入离线 OCR 队列。文字 PDF 优先快速提取，扫描件交给独立 OCR 队列。导入不等于完成解析，界面会明确显示已索引/待解析数量；未完成时也可阅读原 PDF。
@@ -23,6 +23,12 @@
 接口模型与上述「回答模式」分别设置。更换模型名在设置中保存；问答框中的选择控制是否检索与如何使用证据。流式输出逐块展示 API 返回的答案；开启「深度思考」后，也展示服务商返回的思考内容。默认关闭深度思考以减少首字等待；其他兼容接口不强行注入 DeepSeek 专有参数。
 
 中文目录的兼容修复随 `SpecFlow-1.3.0-Resources-Compatibility.zip` 提供：修复 FastText 模型在 Windows 中文安装路径下无法加载的问题。启动 OCR 前先检查语言模型；OCR 的窗口/子步骤百分比仅在日志中展示，整份资料入库前不会标记 100%。离线部署请下载资源清单列出的全部 10 个 ZIP。
+
+## 解析状态与自动恢复
+
+界面显示已完成页数、当前步骤、用时、输出活跃状态和已保存检查点。连续 5 分钟无输出，或 15 分钟没有完成新页面，会终止本次引擎并在队尾自动恢复一次；再次失败会保留原因，继续处理其他文件。每 8 页保存检查点，重启后按原件 SHA256 与解析选项匹配，从已保存页面之后继续。关闭程序会停止当前解析，下次启动继续；已完成文件可随时检索。
+
+1.3.1 复用 1.3.0 的 10 个固定资源包，新 EXE 内含引擎恢复适配。首次安装仍自动下载；已有完整引擎和资料的用户无需重复下载全部规范。
 
 ## 大量文件的处理方式
 

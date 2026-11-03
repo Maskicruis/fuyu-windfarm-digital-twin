@@ -18,7 +18,8 @@ ROOT = Path(__file__).resolve().parent.parent
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--exe', type=Path, default=ROOT/'specflow-component/release/SpecFlow-Knowledge-Component-1.3.0-x64.exe')
+    version=json.loads((ROOT/'specflow-component/package.json').read_text('utf8'))['version']
+    parser.add_argument('--exe', type=Path, default=ROOT/f'specflow-component/release/SpecFlow-Knowledge-Component-{version}-x64.exe')
     parser.add_argument('--pdf', type=Path, help='Optional local text PDF for real upload/index/range checks; never published')
     args = parser.parse_args()
     area = ROOT/'开发源码/验收产物'/('specflow-package-proof-'+uuid.uuid4().hex[:8])

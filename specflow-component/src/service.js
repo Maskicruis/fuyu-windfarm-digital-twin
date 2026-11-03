@@ -56,8 +56,11 @@ class KnowledgeBaseService {
     this.chatImages = new ChatImages(DATA);
     this.queue = new JobQueue({ concurrency: 1 });
     this.ocrQueue = new JobQueue({concurrency:1});
-    this.ocrQueue.on('jobError',({id,error})=>{if(!this.shuttingDown)this.fail(id,error);});
-    this.queue.on('jobError', ({ id, error }) => {if(!this.shuttingDown)this.fail(id,error);});
+    this.pendingRecovery=new Set();
+    this.ocrQueue.on('jobError',({id,error})=>this.handleParseError(id,error));
+    this.queue.on('jobError',({id,error})=>this.handleParseError(id,error));
+    this.ocrQueue.on('changed',()=>this.requeueRecovery());
+    this.queue.on('changed',()=>this.requeueRecovery());
     for (const document of this.documents.filter(item => item.status === 'queued')) {
       if (!document.inputPath && document.file) document.inputPath = path.join(INBOX, document.file);
       if (document.inputPath && fs.existsSync(document.inputPath)) {
@@ -224,12 +227,35 @@ class KnowledgeBaseService {
     const document = this.get(id);
     if (!document) throw new Error('文档不存在');
     if (this.queue.has(id)||this.ocrQueue.has(id)) throw new Error('该作业已在队列中');
+    if(document.status==='ready')document.forceReparse=true;
+    document.recoveryAttempts=0;
     this.enqueue(document);
     return this.publicDocument(document);
   }
 
   log(id, text) {
     fs.appendFileSync(path.join(LOGS, id + '.log'), stripAnsi(text) + '\n', 'utf8');
+  }
+
+  handleParseError(id,error){
+    if(this.shuttingDown)return;
+    const document=this.get(id);if(!document)return;
+    if(error.code==='PARSER_CLEANUP_FAILED'){this.parserBlockedReason=error.message;this.ocrQueue.concurrency=0;}
+    if(error.code==='PARSER_STALLED'&&(document.recoveryAttempts||0)<1){
+      document.recoveryAttempts=(document.recoveryAttempts||0)+1;
+      Object.assign(document,{status:'queued',parseStage:'ocr',progress:0,progressMode:'indeterminate',progressText:'任务停滞，已释放队列，等待自动恢复（1/1）',error:'',lastRecoveryReason:error.message,updatedAt:nowIso()});
+      this.pendingRecovery.add(id);this.persist();this.log(id,'RECOVERY '+error.message);return;
+    }
+    this.fail(id,error);
+  }
+
+  requeueRecovery(){
+    if(this.shuttingDown)return;
+    for(const id of this.pendingRecovery){
+      if(this.queue.has(id)||this.ocrQueue.has(id))continue;
+      this.pendingRecovery.delete(id);const document=this.get(id);
+      if(document)this.ocrQueue.enqueue(id,()=>this.process(document,true));
+    }
   }
 
   fail(id, error) {
@@ -249,19 +275,22 @@ class KnowledgeBaseService {
     document.status = 'parsing';
     document.progress = 0;
     document.progressMode = ocr ? 'indeterminate' : 'determinate';
+    document.startedAt = nowIso();
+    document.parserActivity={};
     delete document.logTail;
     document.progressText = ocr?'扫描件 OCR 中…':'快速读取文字层…';
     document.error = '';
     document.updatedAt = nowIso();
     this.persist();
     const workDir = resolveInside(WORK, document.id);
-    if (fs.existsSync(workDir)) await fs.promises.rm(workDir, { recursive: true, force: true });
+    // Failed attempts are isolated; completed OCR windows survive retries/restarts.
     ensureDir(workDir);
+    if(document.forceReparse){await fs.promises.rm(resolveInside(workDir,'checkpoints'),{recursive:true,force:true});delete document.forceReparse;this.persist();}
     const paths = this.paths(document);
     const corrections = readJson(paths.corrections, {});
     let lastSave = 0;
     const touch = () => {
-      if (Date.now() - lastSave > 800) {
+      if (Date.now() - lastSave > 5000) {
         lastSave = Date.now();
         document.updatedAt = nowIso();
         this.persist();
@@ -287,8 +316,14 @@ class KnowledgeBaseService {
       onLog: tail => {
         document.logTail = stripAnsi(tail).slice(-1200);
         touch();
+      },
+      onStatus: activity => {
+        document.parserActivity={...(document.parserActivity||{}),...activity};
+        if(activity.total){document.progress=Math.min(95,Math.floor(activity.completed/activity.total*90));document.progressMode='determinate';}
+        document.progressText=activity.phase||'离线 OCR 处理中';touch();
       }
     });
+    if(this.shuttingDown)return;
     if(result.needsOCR){document.status='queued';document.fastPassVersion='1.1.0';document.parseStage='ocr';document.progress=0;document.progressText='扫描件待 OCR（不阻塞文字 PDF）';this.persist();this.ocrQueue.enqueue(document.id,()=>this.process(document,true));return;}
     document.progressText = '解析完成，正在建立检索索引…';
     document.progressMode = 'indeterminate';
@@ -724,9 +759,10 @@ class KnowledgeBaseService {
         command: this.settings.mineru,
         bundled: this.settings.mineru.endsWith(path.join('engines','python','python.exe')),
         available: executableAvailable(this.settings.mineru),
+        blockedReason:this.parserBlockedReason||'',
         setupScript: fs.existsSync(path.join(ROOT,'setup-mineru.ps1'))?path.join(ROOT,'setup-mineru.ps1'):null
       },
-      capabilities: ['pdf-text-first', 'pdf', 'mineru', 'background-ocr', 'canonical-content', 'pdf-highlight', 'job-queue', 'local-search(sqlite-fts5)', 'llm-qa', 'citation-jump-highlight'],
+      capabilities: ['pdf-text-first', 'pdf', 'mineru', 'background-ocr', 'canonical-content', 'pdf-highlight', 'job-queue', 'local-search(sqlite-fts5)', 'llm-qa', 'citation-jump-highlight','ocr-checkpoints','parser-watchdog'],
       llm: this.llmStatus(),
       retrieval: { default: 'sqlite-fts5', hybrid: embeddings.isConfigured(this.settings.llm) ? 'available' : 'requires embeddingModel' },
       conversations: this.conversations.length,

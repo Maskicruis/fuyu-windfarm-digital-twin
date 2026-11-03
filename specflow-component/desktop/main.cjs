@@ -43,6 +43,7 @@ else{
   if(!headless&&!require('./install-bundle.cjs').isBundleReady(portable)){loading=new BrowserWindow({width:580,height:210,resizable:false,backgroundColor:'#101d2e',autoHideMenuBar:true});await loading.loadURL('data:text/html;charset=utf-8,'+encodeURIComponent('<body style="background:#101d2e;color:#f4f7fb;font:16px Microsoft YaHei;padding:30px"><h3>SpecFlow 知识组件 · 首次准备</h3><p id="s">正在准备离线引擎和预置规范…</p></body>'));}
   await require('./install-bundle.cjs').installBundle(portable,message=>{if(loading&&!loading.isDestroyed())loading.webContents.executeJavaScript('document.getElementById("s").textContent='+JSON.stringify(message)).catch(()=>{});},url=>net.fetch(url));
   }
+  await require('./prepare-engine.cjs').prepareEngine(portable);
   require('./bundle.cjs').initializeBundle(portable,data);
   const {createHttpServer}=require('../src/http-server');
   backend=createHttpServer();

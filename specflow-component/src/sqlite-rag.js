@@ -2,6 +2,7 @@
 // Persisted inverted index. Parsing and index writes run outside the HTTP thread.
 const fs=require('node:fs'),path=require('node:path');
 const {Worker}=require('node:worker_threads');
+const {workerJob}=require('./worker-job');
 const {DatabaseSync}=require('node:sqlite');
 const {tokenize}=require('./rag');
 const SCHEMA=`CREATE TABLE IF NOT EXISTS docs(id TEXT PRIMARY KEY, signature TEXT, meta TEXT);
@@ -23,11 +24,8 @@ class SqliteRagIndex {
  async refresh(){
   if(this.closed)return;
   if(this.refreshing){await this.refreshing;return this.refresh();}
-  this.refreshing=new Promise((resolve,reject)=>{
-   const worker=this.worker=new Worker(path.join(__dirname,'sqlite-rag-worker.js'),{workerData:{library:this.settings.library,filename:this.filename}});
-   worker.once('message',m=>m.error?reject(Error(m.error)):resolve(m));worker.once('error',reject);
-   worker.once('exit',code=>{if(code)reject(Error('索引任务中断 '+code));});
-  });
+  const worker=this.worker=new Worker(path.join(__dirname,'sqlite-rag-worker.js'),{workerData:{library:this.settings.library,filename:this.filename}});
+  this.refreshing=workerJob(worker);
   try{await this.refreshing;if(!this.closed){this.syncStats();this.isReady=true;this.error='';}}
   finally{this.refreshing=null;this.worker=null;}
  }

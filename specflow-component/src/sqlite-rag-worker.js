@@ -21,5 +21,5 @@ try{
   catch(e){db.exec('ROLLBACK');throw e;}
  }
  for(const row of db.prepare('SELECT id FROM docs').all())if(!seen.has(row.id)){db.exec('BEGIN IMMEDIATE');try{clear(row.id);db.exec('COMMIT');}catch(e){db.exec('ROLLBACK');throw e;}}
- db.prepare("INSERT OR REPLACE INTO index_meta VALUES('version','2')").run();parentPort.postMessage({ok:true});
+ db.prepare("INSERT OR REPLACE INTO index_meta VALUES('version','2')").run();parentPort.postMessage({result:{ok:true}});
 }catch(e){parentPort.postMessage({error:e.message});}finally{db.close();}
