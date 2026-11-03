@@ -42,6 +42,8 @@
 
 1.3.2 使用同一 Release 内独立命名的引擎包和数据库包。已有完整本地资料库与引擎时沿用现有文件；数据库资源补齐缺失的预置内容，不覆盖用户修正或自建资料。
 
+**长扫描件补充修复（Hotfix 1）：** 如果出现 `Timed out waiting for result of task`，请从同一 Release 下载 [SpecFlow-1.3.2-Hotfix-1.zip](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/component-v1.3.2/SpecFlow-1.3.2-Hotfix-1.zip)。[安装说明](hotfixes/long-document-timeout/README-zh-CN.md)。它将 MinerU 默认整份文档等待上限从 1 小时延长至 8 小时，保留停滞检测与检查点恢复，不改变 API 设置或数据库。此修复包是发布后的独立补丁；原始 EXE 与引擎 ZIP 未被替换。当前源码构建已包含同一启动参数修复。
+
 ## 大量文件的处理方式
 
 - 文件上传流式写入本地，复制、文字提取、OCR 结果打包和索引写入在异步任务或工作线程中完成。

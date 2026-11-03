@@ -15,6 +15,10 @@ os.environ.setdefault('PYTHONIOENCODING','utf-8')
 os.environ.setdefault('OMP_NUM_THREADS','4')
 os.environ.setdefault('MKL_NUM_THREADS','4')
 os.environ.setdefault('MINERU_PROCESSING_WINDOW_SIZE','8')
+# The upstream one-hour wall clock limit can abort a healthy long CPU OCR job.
+# The host still enforces its separate no-output / no-new-page watchdogs and
+# saves each eight-page checkpoint; this is not a disabled stall detector.
+os.environ.setdefault('MINERU_TASK_RESULT_TIMEOUT_SECONDS','28800')
 # Multiprocessing re-enters this file; only the original process invokes Click.
 if __name__=='__main__':
  from multiprocessing import freeze_support
