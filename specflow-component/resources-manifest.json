@@ -51,8 +51,8 @@
     },
     {
       "name": "SpecFlow-1.3.0-Resources-Native.zip",
-      "bytes": 1648928,
-      "sha256": "8881a25e3de4e39f2649171b30cc274d5b433eeda71e3a0bbf504e6e62fdbc94",
+      "bytes": 757457,
+      "sha256": "de3882703fae432aa1a93a91097106f3556b088fd2737ae09e184bf3ae5b3f74",
       "url": "https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/component-v1.3.0/SpecFlow-1.3.0-Resources-Native.zip"
     }
   ],

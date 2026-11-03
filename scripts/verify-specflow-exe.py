@@ -11,6 +11,7 @@ import time
 import urllib.request
 import urllib.parse
 import uuid
+import base64
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -91,6 +92,10 @@ def main():
     try:
         process = start(['--port','38910'])
         service = wait_service()
+        pid=str(int(service['pid']))
+        encoded=subprocess.check_output(['powershell.exe','-NoProfile','-Command',"[Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes((Get-Process -Id "+pid+").Path))"],text=True).strip()
+        runtime=Path(base64.b64decode(encoded).decode('utf-16-le')).parent/'resources/app/resources-manifest.json'
+        assert json.loads(runtime.read_text('utf8'))==json.loads((ROOT/'specflow-component/resources-manifest.json').read_text('utf8'))
         base = 'http://127.0.0.1:'+str(service['port'])
         with urllib.request.urlopen(base, timeout=10) as r:
             assert r.read() == (ROOT/'specflow-component/ui.html').read_bytes()
@@ -162,7 +167,7 @@ def main():
         assert restored['llm']['apiKey']=='fixture-only-no-real-credential'
         assert len(request(base,'/api/v1/conversations/'+conversation['id'])['turns'])>=2
         proof={'passed':True,'sha256':hashlib.sha256(executable.read_bytes()).hexdigest(),
-               'exe_alone':True,'original_ui_bytes':True,'sse_event_types':sorted(kinds),
+               'exe_alone':True,'original_ui_bytes':True,'embedded_resources_match_source':True,'sse_event_types':sorted(kinds),
                'context_history':True,'settings_and_history_survive_restart':True,
                'configured_port_survives_restart':True,'provider':'local mock, no real model API call',
                'native_upload_search_page_range_singleton':bool(args.pdf),

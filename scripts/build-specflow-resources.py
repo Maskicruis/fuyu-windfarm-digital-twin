@@ -5,9 +5,15 @@ from concurrent.futures import ThreadPoolExecutor
 
 def write_json(p,value):
  p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes((json.dumps(value,ensure_ascii=False,indent=2)+'\n').encode())
+def release_file(p):
+ name=p.name.lower()
+ return not (name.endswith('.dll') and ('clr0400' in name or name.startswith(('vcruntime140d','vcruntime140_1d','vcruntime140_threadsd','msvcp140d','msvcp140_1d','msvcp140_2d'))))
 def native_runtime_part(release):
  if os.name!='nt':return None
- system=Path(os.environ['SystemRoot'])/'System32';files=[*system.glob('vcruntime140*.dll'),*system.glob('msvcp140*.dll'),system/'concrt140.dll',system/'vccorlib140.dll'];files=[p for p in files if p.exists()]
+ system=Path(os.environ['SystemRoot'])/'System32'
+ # Only the release redistributable runtime, never Debug CRT or .NET CLR files.
+ names=['vcruntime140.dll','vcruntime140_1.dll','vcruntime140_threads.dll','msvcp140.dll','msvcp140_1.dll','msvcp140_2.dll','msvcp140_atomic_wait.dll','msvcp140_codecvt_ids.dll','concrt140.dll','vccorlib140.dll']
+ files=[system/name for name in names if (system/name).exists()]
  if not any(p.name.lower()=='vcruntime140_threads.dll' for p in files):raise RuntimeError('The build machine needs the current Microsoft VC runtime, including vcruntime140_threads.dll')
  file=release/'SpecFlow-1.3.0-Resources-Native.zip'
  with zipfile.ZipFile(file,'w',zipfile.ZIP_DEFLATED,compresslevel=3) as z:
@@ -61,7 +67,7 @@ def build_database(data,target):
  write_json(target/'manifest.json',{'version':'1.3.0','documents':seeds,'counts':{'total':len(seeds),'indexed':sum(d['status']=='ready' for d in seeds)},'origin':'User-provided construction acceptance specifications','license':'Standards retain their original publication rights; project MIT license does not relicense their content.'})
 def archives(root,release):
  excluded={'__pycache__','tests','test','include','cmake'}
- files=[p for folder in ['engines','database'] for p in (root/folder).rglob('*') if not excluded.intersection(p.relative_to(root).parts) and p.is_file() and p.name not in ['.search-index.sqlite-wal','.search-index.sqlite-shm','direct_url.json']];groups=[];group=[];size=0
+ files=[p for folder in ['engines','database'] for p in (root/folder).rglob('*') if not excluded.intersection(p.relative_to(root).parts) and release_file(p) and p.is_file() and p.name not in ['.search-index.sqlite-wal','.search-index.sqlite-shm','direct_url.json']];groups=[];group=[];size=0
  for p in sorted(files):
   if group and size+p.stat().st_size>550*1024**2:groups.append(group);group=[];size=0
   group.append(p);size+=p.stat().st_size
@@ -85,10 +91,10 @@ def direct_distribution(data,engine,venv,models,release,originals=None):
  release.mkdir(parents=True,exist_ok=True);mapping={};stage=release/'catalog';stage.mkdir(exist_ok=True)
  def add(source,name):mapping[name]=Path(source)
  for p in (engine/'python').iterdir():
-  if p.is_file():add(p,'engines/python/'+p.name)
+  if p.is_file() and release_file(p):add(p,'engines/python/'+p.name)
  for p in (venv/'Lib/site-packages').rglob('*'):
   relative=p.relative_to(venv/'Lib/site-packages')
-  if not {'__pycache__','tests','test','include','cmake'}.intersection(relative.parts) and p.is_file() and p.suffix not in ['.pyc','.pyo'] and p.name!='direct_url.json':add(p,'engines/python/Lib/site-packages/'+relative.as_posix())
+  if not {'__pycache__','tests','test','include','cmake'}.intersection(relative.parts) and release_file(p) and p.is_file() and p.suffix not in ['.pyc','.pyo'] and p.name!='direct_url.json':add(p,'engines/python/Lib/site-packages/'+relative.as_posix())
  for p in models.rglob('*'):
   if p.is_file():add(p,'engines/models/'+p.relative_to(models).as_posix())
  for name in ['engine.json','packages.json','requirements-frozen.txt']:
