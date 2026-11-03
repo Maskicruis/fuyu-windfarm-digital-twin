@@ -30,7 +30,7 @@ function writePackage({ document, outputDir, sourcePath, rawMarkdownPath, images
   applyCorrections(document, corrections);
   const title = safeName(document.document.title);
   if (imagesDir) copyDirectoryFiles(imagesDir, ensureDir(path.join(outputDir, 'images')));
-  if (sourcePath) fs.copyFileSync(sourcePath, path.join(outputDir, title + path.extname(sourcePath).toLowerCase()));
+  if (sourcePath) {const destination=path.join(outputDir,title+path.extname(sourcePath).toLowerCase());if(path.resolve(sourcePath)!==path.resolve(destination))fs.copyFileSync(sourcePath,destination);}
   if (rawMarkdownPath) fs.copyFileSync(rawMarkdownPath, path.join(outputDir, 'raw.mineru.md'));
   fs.writeFileSync(path.join(outputDir, title + '.md'), documentToMarkdown(document), 'utf8');
   writeJson(path.join(outputDir, 'document.json'), document);

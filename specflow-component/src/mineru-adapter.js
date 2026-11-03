@@ -1,6 +1,7 @@
 'use strict';
 
 const { spawn } = require('node:child_process');
+const fs=require('node:fs'),path=require('node:path');
 
 const BACKENDS = new Set([
   'pipeline',
@@ -65,6 +66,11 @@ function stopMineru(){for(const child of activeChildren){if(process.platform==='
 function runMineru({ executable, inputPath, outputDir, options, onProgress, onLog }) {
   const normalized = normalizeOptions(options);
   const args = buildArgs(inputPath, outputDir, normalized);
+  const bundledEntry=path.join(path.dirname(executable),'..','run_mineru.py');
+  if(path.basename(executable).toLowerCase()==='python.exe'&&fs.existsSync(bundledEntry)){
+   if(normalized.backend!=='pipeline'||normalized.parseFormula)throw Error('内置离线引擎提供 pipeline 中文OCR、版面与表格解析。高级公式或VLM请指定相应的外部引擎。');
+   args.unshift(bundledEntry);
+  }
   return new Promise((resolve, reject) => {
     const child = spawn(executable, args, {
       windowsHide: true,

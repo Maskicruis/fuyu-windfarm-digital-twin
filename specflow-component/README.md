@@ -1,15 +1,17 @@
-# SpecFlow 知识组件 1.2.0
+# SpecFlow 知识组件 1.3.0 · 规范与离线解析完整版
 
 独立运行的文件存储、PDF 解析、规范检索、连续问答与原文阅读组件。基于 SpecFlow 0.11.1 裁剪，并针对批量规范处理作适配；保留 SpecFlow 图标、流式客户端、会话渲染及引用数据契约。
 
-[下载 EXE 与快速入门](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/component-v1.2.0) · [接入接口](integration/README.md) · [本机验收记录](../docs/COMPONENT-1.2.0-VALIDATION.md)
+[下载 EXE、资源与快速入门](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/component-v1.3.0) · [接入接口](integration/README.md)
+
+完整版预置「施工验收规范」71 份 PDF 原件、已解析内容与持久化索引，以及独立 CPython 3.12.7、MinerU 3.4.5、CPU PyTorch、中文 OCR、版面和表格模型。无需另装 Python、MinerU 或下载默认解析模型。
 
 ## 开始使用
 
-1. 将 `SpecFlow-Knowledge-Component-1.2.0-x64.exe` 放在有写入权限的目录，双击直接打开独立桌面窗口，无需先运行数字孪生。升级原组件时放回原目录，保留 `workspace`。
+1. 将 `SpecFlow-Knowledge-Component-1.3.0-x64.exe` 放在有写入权限、至少约 8 GB 空余的目录，双击启动。首次自动下载资源、校验 SHA256 并解压；之后直接打开。离线部署时，从同一 Release 下载全部 `SpecFlow-1.3.0-Resources-*.zip` 和 `resources-manifest.json`，与 EXE 放在一起再启动，无需手动解压。保留 `workspace`，可沿用 API 配置与会话。
 2. 左侧「设置 → 模型接口」填写兼容 Chat Completions 的接口地址、模型名与密钥，点击保存。修改地址或模型时，密钥留空会保留已保存的值；清除密钥需使用单独按钮。
 3. 打开「文档数据库」，选择分组后上传 PDF；桌面版也可点击「导入文件夹」批量导入。重复导入同一文件夹会按源路径、大小与修改时间跳过未变文件。
-4. 文字 PDF 优先快速提取，扫描件交给独立 OCR 队列。文件显示「已入库」后才进入检索范围；未完成解析时也可阅读原 PDF。
+4. 首次启动自动登记全部预置规范；已预解析文件可立即检索，其余自动进入离线 OCR 队列。文字 PDF 优先快速提取，扫描件交给独立 OCR 队列。导入不等于完成解析，界面会明确显示已索引/待解析数量；未完成时也可阅读原 PDF。
 5. 在问答框选择回答模式。界面始终检索全部数据库，不会恢复旧会话的单文件/分组限制。点击答案的引用编号，打开对应 PDF 页并高亮原文；支持翻页和缩放。页码为 **PDF 文件页码**，可能与书籍印刷页码不同。
 
 | 回答模式 | 有相关资料 | 没有相关资料 |
@@ -36,14 +38,16 @@
 
 记录、配置与会话采用临时文件写入后原子替换保存；数据目录设占用保护。便携包每次启动使用独立临时目录，避免另一个进程退出时清理当前进程的资源。
 
-数据默认位于 EXE 同目录 `workspace/data` 和 `workspace/资料库`，API 设置、文档、索引与会话重启后沿用。组件默认绑定 127.0.0.1，不依赖数字孪生 EXE。后台启动参数与外部接入见 integration/README.md。
+数据默认位于 EXE 同目录 `workspace/data` 和 `workspace/资料库`，API 设置、文档、索引与会话重启后沿用。预置原件和解析内容也安装到资料库；资源包不会覆盖用户的 API 设置或聊天历史。组件默认绑定 127.0.0.1，不依赖数字孪生 EXE。后台启动参数与外部接入见 integration/README.md。
 
-文字 PDF 不需要额外安装 OCR。扫描件需要已安装的 MinerU 及其模型，在「设置 → 解析引擎」选择可执行文件；EXE 不包含 OCR 模型。本机已有 MinerU 可直接沿用。文字层提取优先保证快速查找与原文坐标，复杂表格或字符异常应在原 PDF 核对，并可切换 OCR 重解析。少量可复制水印不等于完整文字层，稀疏文字 PDF 会转入 OCR。
+文字 PDF 直接使用随 EXE 的 PDF.js。默认扫描解析使用随资源包的 MinerU pipeline CPU 引擎，中文 OCR、版面和表格模型均从本地加载，无需依赖开发电脑的 Python、用户缓存或盘符。高级公式与 VLM 是外部引擎扩展，不包含其大型模型；使用这些模式需在设置中指定相应引擎。文字层提取优先保证快速查找与原文坐标，复杂表格或字符异常应在原 PDF 核对，并可切换 OCR 重解析。少量可复制水印不等于完整文字层，稀疏文字 PDF 会转入 OCR。
 
 当前支持导入 PDF；其他格式需先转换 PDF。检索相关性判定和引用编号检查用于减少无依据回答，不能证明每句话语义正确，也不会自动确认规范现行有效性。可点击原文核查适用范围与数值。
 
-API 密钥沿用 SpecFlow 的本地设置存储方式，不写入公开交付。备份时保护 workspace，勿将原件、索引和 `workspace/data/settings.json` 上传 GitHub。来源、改动文件与许可见 NOTICE.md、UPSTREAM-BACKEND.json、ui-provenance.json。
+API 密钥沿用 SpecFlow 的本地设置存储方式，不写入公开交付。发布资源只包含筛选后的预置规范、解析内容、索引与引擎，不包含用户 API 密钥、会话或设置文件。用户数据位于 `workspace`，不要将该目录上传 GitHub。项目源码为 MIT；规范原件及第三方引擎、模型保留各自许可，见 NOTICE.md、随包 `engines/third-party-notices` 和各 Python 包的许可证。
 
 ## 开发
 
 Node.js 24；`npm ci --prefix specflow-component`，`npm test --prefix specflow-component`，`npm run build --prefix specflow-component`。Windows x64 portable 包包含 Electron/Node 和 PDF.js；原 SpecFlow 的非知识库业务已移除。
+
+资源构建脚本为 `scripts/build-specflow-resources.py`，输入已安装的固定版本引擎、模型和规范库，生成不含私密设置的资源分包及校验清单。`--direct` 直接从原件和引擎源目录生成分包，建议输出到本地 SSD，避免在 U 盘内重复拷贝大文件；`--archives-only` 可从已准备目录重新生成分包。将生成的 `resources-manifest.json` 复制到组件工程后再构建 EXE；分包与源码、EXE 一起发布到同一版本的 Release。开发验收可用 `--no-bundle` 跳过预置资源安装，正常用户启动无需此参数。

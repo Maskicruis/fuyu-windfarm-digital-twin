@@ -1,0 +1,41 @@
+'use strict';
+const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),{spawn}=require('node:child_process');
+const {readJson,writeJson}=require('../src/utils');
+function digest(file){return new Promise((resolve,reject)=>{const hash=crypto.createHash('sha256'),stream=fs.createReadStream(file);stream.on('data',c=>hash.update(c));stream.on('error',reject);stream.on('end',()=>resolve(hash.digest('hex')));});}
+function bundleManifest(root){
+ const local=readJson(path.join(root,'resources-manifest.json')),embedded=readJson(path.join(__dirname,'../resources-manifest.json'));
+ if(!local)return embedded;if(!embedded)return local;
+ const version=s=>String(s).split('.').reduce((v,n)=>v*1000+Number(n||0),0);
+ return version(embedded.version)>version(local.version)?embedded:local;
+}
+function isBundleReady(root){const manifest=bundleManifest(root),marker=readJson(path.join(root,'resources-installed.json'));return !manifest||marker?.version===manifest.version&&manifest.required.every(p=>fs.existsSync(path.join(root,p)));}
+async function installBundle(root,onProgress=()=>{},fetcher=globalThis.fetch){
+ const manifest=bundleManifest(root);if(!manifest||isBundleReady(root))return;
+ for(const part of manifest.parts){
+  if(path.basename(part.name)!==part.name)throw Error('资源包名称无效');
+  const archive=path.join(root,part.name);
+  if(!fs.existsSync(archive)){
+   if(!part.url)throw Error('缺少完整套件资源包：'+part.name+'。请从同一 Release 下载全部资源包，放在 EXE 同目录。');
+   const expected='https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/component-v'+manifest.version+'/'+encodeURIComponent(part.name);
+   if(part.url!==expected)throw Error('资源下载地址无效');
+   onProgress('首次下载离线资源：'+part.name+'（'+Math.ceil(part.bytes/1024/1024)+' MB）');
+   const response=await fetcher(expected);if(!response.ok)throw Error('资源下载失败 HTTP '+response.status+'，可从 Release 手动下载同名资源包后重试。');
+   const temporary=archive+'.download',fd=fs.openSync(temporary,'w');let received=0,last=0;
+   try{for await(const chunk of response.body){fs.writeSync(fd,chunk);received+=chunk.length;if(Date.now()-last>600){last=Date.now();onProgress('正在下载 '+part.name+' · '+Math.floor(received/Math.max(part.bytes,1)*100)+'%');}}}finally{fs.closeSync(fd);}
+   if(received!==part.bytes||await digest(temporary)!==part.sha256)throw Error('下载校验失败，请重新启动重试：'+part.name);
+   fs.renameSync(temporary,archive);
+  }
+  onProgress('正在校验 '+part.name);if(await digest(archive)!==part.sha256)throw Error('资源包校验失败：'+part.name);
+ }
+ for(const [i,part] of manifest.parts.entries()){
+  onProgress('正在解压预置资源 '+(i+1)+' / '+manifest.parts.length+'，首次启动需要一些时间…');
+  await new Promise((resolve,reject)=>{
+   // Paths are passed through environment variables, never interpolated as code.
+   const child=spawn('powershell.exe',['-NoProfile','-NonInteractive','-Command',"$ErrorActionPreference='Stop'; Expand-Archive -LiteralPath $env:SF_ARCHIVE -DestinationPath $env:SF_DEST -Force"],{windowsHide:true,env:{...process.env,SF_ARCHIVE:path.join(root,part.name),SF_DEST:root}});
+   let error='';child.stderr.on('data',c=>error+=c);child.on('error',reject);child.on('close',code=>code===0?resolve():reject(Error('资源解压失败：'+error.slice(-1000))));
+  });
+ }
+ for(const required of manifest.required)if(!fs.existsSync(path.join(root,required)))throw Error('资源文件不完整：'+required);
+ writeJson(path.join(root,'resources-installed.json'),{version:manifest.version,installedAt:new Date().toISOString()});
+}
+module.exports={installBundle,digest,isBundleReady};

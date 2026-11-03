@@ -630,7 +630,7 @@ function safeTableHtml(raw){
 function showParserState(health){
   var info=health&&health.mineru;
   [document.getElementById('parserState'),document.getElementById('databaseParserState')].filter(Boolean).forEach(function(el){
-    if(info&&info.available){ el.className='parser-state ok'; el.textContent='✓ 可用：'+info.command; }
+    if(info&&info.available){ el.className='parser-state ok'; el.textContent=info.bundled?'✓ 内置离线解析已就绪 · 中文OCR / 版面 / 表格 · CPU，无需安装其他引擎':'✓ 可用：'+info.command; }
     else { el.className='parser-state bad'; el.textContent='✗ 尚未安装或配置 MinerU'; }
   });
 }

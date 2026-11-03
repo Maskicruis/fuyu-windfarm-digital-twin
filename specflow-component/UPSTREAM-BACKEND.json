@@ -40,7 +40,7 @@
     {
       "path": "src/pipeline.js",
       "upstream_sha256": "1ad091b4f18b30545ded11d8812380bc2a1c33ed73b4bdb3746086587a677bdd",
-      "sha256": "de18c459666630763d4a623dce2ce881850fcef312e5c442acca27d26ee86e41",
+      "sha256": "967bafadf5dce7756189e68e0b806a4d2f7e52b321d135c2717aada8bd75ab16",
       "reason": "1.1: fast ingestion, persistent index and strict grounded chat"
     },
     {
@@ -57,7 +57,7 @@
     },
     {
       "path": "src/mineru-adapter.js",
-      "sha256": "f7c5355b92e477bb99d23a6680e628b971a0b9cb415f4deaf1d7d895594df310",
+      "sha256": "bbe102f44367566892d2dacbaf8a3ce9777b4f208e89e85905ee6cc4b79c6608",
       "upstream_sha256": "2dd0ea3aabb41c7d0fe43a9495c41bac71ec7f505f4338d7a2b16a089b5793a8",
       "reason": "1.1.0: native text pass, persistent FTS, strict answering policy and background service lifecycle adaptation"
     },

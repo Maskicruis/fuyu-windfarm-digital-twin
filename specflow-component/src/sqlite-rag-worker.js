@@ -12,7 +12,7 @@ try{
  const insert=db.prepare('INSERT INTO entries(docId,payload) VALUES(?,?)'),fts=db.prepare('INSERT INTO terms(rowid,tokens,docId,itemId) VALUES(?,?,?,?)');
  for(const entry of fs.readdirSync(workerData.library,{withFileTypes:true})){
   if(!entry.isDirectory())continue;const file=path.join(workerData.library,entry.name,'document.json');if(!fs.existsSync(file))continue;
-  const stat=fs.statSync(file),signature='scope-v2|'+file+'|'+stat.size+'|'+stat.mtimeMs;
+  const stat=fs.statSync(file),signature='scope-v3|'+entry.name+'|'+stat.size+'|'+stat.mtimeMs;
   const old=db.prepare('SELECT id FROM docs WHERE signature=?').get(signature);if(old){seen.add(old.id);continue;}
   const doc=JSON.parse(fs.readFileSync(file,'utf8')),meta=doc.document||{},id=meta.id||entry.name;seen.add(id);
   const rows=(doc.items||[]).filter(i=>!['header','footer','page_number'].includes(i.type)).map(i=>({docId:id,title:meta.title||entry.name,page:i.page,itemId:i.id,type:i.type,order:i.order,ref:(String(i.text||'').match(/^\s*(\d+(?:\.\d+){1,5})/)||[])[1]||'',text:i.text||String(i.html||'').replace(/<[^>]+>/g,' ')||i.caption||'',bbox:i.bbox?.pdf||null,bboxNormalized:i.bbox?.normalized||null})).filter(i=>i.text.trim()).sort((a,b)=>a.page-b.page||a.order-b.order);

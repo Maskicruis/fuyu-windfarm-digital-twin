@@ -712,6 +712,7 @@ class KnowledgeBaseService {
       parserAvailable: true,
       mineru: {
         command: this.settings.mineru,
+        bundled: this.settings.mineru.endsWith(path.join('engines','python','python.exe')),
         available: executableAvailable(this.settings.mineru),
         setupScript: fs.existsSync(path.join(ROOT,'setup-mineru.ps1'))?path.join(ROOT,'setup-mineru.ps1'):null
       },

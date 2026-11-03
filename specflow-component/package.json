@@ -1,6 +1,6 @@
 {
   "name": "specflow-knowledge-component",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "SpecFlow-derived standalone file parsing, knowledge and language model component",
   "author": "Maskicruis",
   "license": "MIT",
@@ -41,7 +41,8 @@
       "UPSTREAM-BACKEND.json",
       "ui-provenance.json",
       "NOTICE.md",
-      "integration/**"
+      "integration/**",
+      "resources-manifest.json"
     ],
     "win": {
       "icon": "build/app.ico",

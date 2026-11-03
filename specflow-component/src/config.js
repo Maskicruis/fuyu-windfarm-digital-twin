@@ -24,6 +24,7 @@ function mineruCandidates(root = ROOT, env = process.env) {
   const binDir = process.platform === 'win32' ? 'Scripts' : 'bin';
   const executable = process.platform === 'win32' ? 'mineru.exe' : 'mineru';
   const candidates = [];
+  if(env.KB_BUNDLE_ROOT)candidates.push(path.join(env.KB_BUNDLE_ROOT,'engines','python','python.exe'));
   if (env.LOCALAPPDATA) {
     candidates.push(path.join(env.LOCALAPPDATA, 'knowledge-base-tool', 'mineru-venv', binDir, executable));
   }
@@ -41,6 +42,7 @@ function findMineru(env = process.env, root = ROOT) {
 function preferDiscoveredMineru(configured, discovered = findMineru()) {
   const value = String(configured || '').trim();
   if (!value || ['mineru', 'mineru.exe'].includes(value.toLowerCase())) return discovered;
+  if(discovered.endsWith(path.join('engines','python','python.exe'))&&(value.includes('knowledge-base-tool')||path.isAbsolute(value)&&!fs.existsSync(value)))return discovered;
   return value;
 }
 

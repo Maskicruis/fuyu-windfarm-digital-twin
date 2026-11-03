@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parent.parent
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--exe', type=Path, default=ROOT/'specflow-component/release/SpecFlow-Knowledge-Component-1.2.0-x64.exe')
+    parser.add_argument('--exe', type=Path, default=ROOT/'specflow-component/release/SpecFlow-Knowledge-Component-1.3.0-x64.exe')
     parser.add_argument('--pdf', type=Path, help='Optional local text PDF for real upload/index/range checks; never published')
     args = parser.parse_args()
     area = ROOT/'开发源码/验收产物'/('specflow-package-proof-'+uuid.uuid4().hex[:8])
@@ -56,7 +56,7 @@ def main():
     process = None
 
     def start(extra):
-        return subprocess.Popen([str(executable),'--background','--data-dir',str(data),*extra], creationflags=0x08000000)
+        return subprocess.Popen([str(executable),'--background','--no-bundle','--data-dir',str(data),*extra], creationflags=0x08000000)
 
     def wait_service():
         for _ in range(90):

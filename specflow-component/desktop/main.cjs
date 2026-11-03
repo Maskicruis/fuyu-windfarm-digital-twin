@@ -1,5 +1,5 @@
 'use strict';
-const {app,BrowserWindow,ipcMain,dialog,shell}=require('electron');
+const {app,BrowserWindow,ipcMain,dialog,shell,net}=require('electron');
 const fs=require('node:fs'),path=require('node:path');
 const {DataLock}=require('./data-lock.cjs');
 const args=process.argv.slice(1),value=name=>{const i=args.indexOf(name);return i>=0?args[i+1]:null;};
@@ -11,6 +11,7 @@ const portable=process.env.PORTABLE_EXECUTABLE_DIR||(app.isPackaged?path.dirname
 const data=path.resolve(value('--data-dir')||path.join(portable,'workspace','data'));
 fs.mkdirSync(data,{recursive:true});
 process.env.KB_ROOT=path.resolve(__dirname,'..');process.env.KB_DATA_DIR=data;
+process.env.KB_BUNDLE_ROOT=portable;
 app.setPath('userData',path.join(path.dirname(data),headless?'desktop-profile-service':'desktop-profile-ui'));
 let window=null,backend=null,serviceUrl='',opening=null,shuttingDown=false;
 const ownerLock=new DataLock(data);process.on('exit',()=>ownerLock.release());
@@ -37,6 +38,12 @@ else{
   const ownsData=ownerLock.acquire();
   let requested=0,port=0,url='';
   if(ownsData){
+  let loading=null;
+  if(!args.includes('--no-bundle')){
+  if(!headless&&!require('./install-bundle.cjs').isBundleReady(portable)){loading=new BrowserWindow({width:580,height:210,resizable:false,backgroundColor:'#101d2e',autoHideMenuBar:true});await loading.loadURL('data:text/html;charset=utf-8,'+encodeURIComponent('<body style="background:#101d2e;color:#f4f7fb;font:16px Microsoft YaHei;padding:30px"><h3>SpecFlow 知识组件 · 首次准备</h3><p id="s">正在准备离线引擎和预置规范…</p></body>'));}
+  await require('./install-bundle.cjs').installBundle(portable,message=>{if(loading&&!loading.isDestroyed())loading.webContents.executeJavaScript('document.getElementById("s").textContent='+JSON.stringify(message)).catch(()=>{});},url=>net.fetch(url));
+  }
+  require('./bundle.cjs').initializeBundle(portable,data);
   const {createHttpServer}=require('../src/http-server');
   backend=createHttpServer();
   if(!fs.existsSync(path.join(data,'settings.json')))backend.service.updateSettings({library:path.join(path.dirname(data),'资料库')});
@@ -45,6 +52,7 @@ else{
   await new Promise((resolve,reject)=>{const listen=port=>{backend.server.once('error',error=>{if(error.code==='EADDRINUSE'&&port!==0)listen(0);else reject(error);});backend.server.listen(port,'127.0.0.1',resolve);};listen(requested);});
   port=backend.server.address().port;url=serviceUrl='http://127.0.0.1:'+port+'/';ownerLock.publish(url);
   fs.writeFileSync(path.join(data,'component-service.json'),JSON.stringify({pid:process.pid,port,version:app.getVersion(),upstream:'SpecFlow 0.11.1',data},null,2));
+  if(loading){if(showWhenReady)await openWindow();loading.close();}
   }else{if(headless){app.quit();return;}url=serviceUrl=await ownerLock.url();port=Number(new URL(url).port);requested=port;}
   ipcMain.handle('desktop:info',()=>({name:'SpecFlow 知识组件',version:app.getVersion(),platform:process.platform,dataDir:data,url,port,configuredPort:requested,fallback:requested>0&&requested!==port}));
   ipcMain.handle('desktop:open-data',()=>shell.openPath(data));
