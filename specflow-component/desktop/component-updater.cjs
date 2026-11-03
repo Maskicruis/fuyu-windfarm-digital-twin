@@ -1,6 +1,7 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const REPOSITORY='Maskicruis/fuyu-windfarm-digital-twin',MAX_BYTES=512*1024*1024;
+const PUBLIC_FEED='https://github.com/'+REPOSITORY+'/releases/download/component-update/component-update.json';
 function version(value){if(!/^\d+\.\d+\.\d+$/.test(value))throw Error('组件版本无效');return value.split('.').map(Number);}
 function newer(a,b){const x=version(a),y=version(b);for(let i=0;i<3;i++){if(x[i]!==y[i])return x[i]>y[i];}return false;}
 function trustedUrl(value){const u=new URL(value);if(u.protocol!=='https:'||u.username||u.password||(u.port&&u.port!=='443')||!['api.github.com','github.com','release-assets.githubusercontent.com','objects.githubusercontent.com'].includes(u.hostname))throw Error('更新地址不受信任');return u;}
@@ -22,15 +23,25 @@ class ComponentUpdater{
  constructor({current,root,fetch,apply}){version(current);this.current=current;this.root=path.resolve(root);this.fetch=fetch;this.apply=apply;this.folder=path.join(this.root,'workspace/data/updates');this.item=null;this.busy=false;this.package=null;this.state={phase:'idle',message:'检查独立知识组件更新',progress:0};}
  status(){return {...this.state,currentVersion:this.current,availableVersion:this.item?.version||null,releaseUrl:this.item?.releaseUrl||null,notes:this.item?.notes||'',repository:REPOSITORY,busy:this.busy,canInstall:!!this.apply};}
  async response(url,timeout=45000){for(let redirects=0;redirects<6;redirects++){
-  trustedUrl(url);const response=await this.fetch(url,{redirect:'manual',signal:AbortSignal.timeout(timeout),headers:{'User-Agent':'SpecFlow-Component-Updater/'+this.current,'Accept':new URL(url).hostname==='api.github.com'?'application/vnd.github+json':'application/octet-stream'}});
+  trustedUrl(url);const response=await this.fetch(url,{redirect:'follow',signal:AbortSignal.timeout(timeout),headers:{'User-Agent':'SpecFlow-Component-Updater/'+this.current,'Accept':new URL(url).hostname==='api.github.com'?'application/vnd.github+json':'application/octet-stream'}});
+  if(response.url)trustedUrl(response.url);
   if([301,302,303,307,308].includes(response.status)){const location=response.headers.get('location');if(!location)throw Error('更新重定向地址缺失');url=new URL(location,url).href;continue;}
   if(!response.ok)throw Error('更新服务返回 HTTP '+response.status+(response.status===403?'，请稍后重试':''));return response;
  }throw Error('更新重定向次数过多');}
  async check(){if(this.busy)throw Error('更新任务进行中');this.busy=true;this.state={phase:'checking',message:'正在检查知识组件发布…',progress:0};
   try{
    // Never use /releases/latest: that belongs to the digital twin application.
-   const response=await this.response(`https://api.github.com/repos/${REPOSITORY}/releases?per_page=100`),text=await response.text();if(text.length>4*1024*1024)throw Error('更新元数据过大');
-   const releases=JSON.parse(text);if(!Array.isArray(releases))throw Error('组件发布列表无效');
+   let releases;
+   try{
+    const response=await this.response(PUBLIC_FEED+'?check='+Date.now()),text=await response.text();if(text.length>65536)throw Error('更新清单过大');
+    const feed=JSON.parse(text);if(feed.schema!==1)throw Error('更新清单格式无效');version(feed.version);
+    const name=`SpecFlow-Knowledge-Component-${feed.version}-x64.exe`;
+    releases=[{tag_name:'component-v'+feed.version,body:feed.notes||'',assets:[{name,state:'uploaded',size:feed.bytes,digest:'sha256:'+feed.sha256,browser_download_url:feed.url}]}];
+    if(!selectRelease(releases,'0.0.0'))throw Error('更新清单校验失败');
+   }catch{
+    const response=await this.response(`https://api.github.com/repos/${REPOSITORY}/releases?per_page=100`),text=await response.text();if(text.length>4*1024*1024)throw Error('更新元数据过大');
+    releases=JSON.parse(text);if(!Array.isArray(releases))throw Error('组件发布列表无效');
+   }
    this.item=selectRelease(releases,this.current);this.package=null;
    this.state={phase:this.item?'available':'current',message:this.item?'发现知识组件 V'+this.item.version:'当前知识组件已是最新版本 V'+this.current,progress:0};
   }catch(error){this.state={phase:'error',message:'检查更新失败：'+error.message,progress:0};throw error;}finally{this.busy=false;}return this.status();

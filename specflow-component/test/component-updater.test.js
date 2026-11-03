@@ -3,6 +3,10 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const {ComponentUpdater,selectRelease,trustedUrl}=require('../desktop/component-updater.cjs');
 const bytes=Buffer.from('controlled executable fixture'),sha=crypto.createHash('sha256').update(bytes).digest('hex');
 function release(v='1.3.4'){return {tag_name:'component-v'+v,body:'fixture notes',assets:[{name:`SpecFlow-Knowledge-Component-${v}-x64.exe`,state:'uploaded',size:bytes.length,digest:'sha256:'+sha,browser_download_url:`https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/component-v${v}/SpecFlow-Knowledge-Component-${v}-x64.exe`}]};}
+test('public component channel works without GitHub API quota or credentials',async()=>{
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'specflow-feed-'));let apiCalls=0;
+ try{const update=new ComponentUpdater({current:'1.3.3',root,fetch:async url=>{if(!url.includes('component-update.json')){apiCalls++;return new Response('',{status:403});}return new Response(JSON.stringify({schema:1,version:'1.3.4',bytes:bytes.length,sha256:sha,url:release().assets[0].browser_download_url}));}});assert.equal((await update.check()).availableVersion,'1.3.4');assert.equal(apiCalls,0);}finally{fs.rmSync(root,{recursive:true,force:true});}
+});
 test('independent feed excludes digital twin releases, drafts, missing digests and foreign binaries',()=>{
  const bad=release('9.0.0');bad.assets[0].digest=null;
  assert.equal(selectRelease([{...release('9.0.1'),draft:true},bad,{...release('9.0.2'),tag_name:'v9.0.2'},release()], '1.3.3').version,'1.3.4');

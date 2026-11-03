@@ -1,8 +1,8 @@
-# SpecFlow 知识组件 1.3.3 · 完整离线数据库与独立更新
+# SpecFlow 知识组件 1.3.4 · 完整离线数据库与独立更新
 
 独立运行的文件存储、PDF 解析、规范检索、连续问答和原文阅读组件。基于 SpecFlow 0.11.1 裁剪，保留其图标、流式客户端、会话与引用契约。
 
-[完整下载](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/component-v1.3.3) · [接入接口](integration/README.md) · [预置规范目录](presets/施工验收规范目录.csv)
+[完整下载](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/component-v1.3.4) · [接入接口](integration/README.md) · [预置规范目录](presets/施工验收规范目录.csv)
 
 ## 下载与启动
 
@@ -10,7 +10,7 @@ Windows x64，建议预留至少 12 GB 磁盘空间。完整交付包含以下 6
 
 | 文件 | 用途 |
 | --- | --- |
-| `SpecFlow-Knowledge-Component-1.3.3-x64.exe` | 独立桌面程序 |
+| `SpecFlow-Knowledge-Component-1.3.4-x64.exe` | 独立桌面程序 |
 | `SpecFlow-1.3.2-Parsing-Engine-Windows-x64.zip` | 沿用已验证的 CPython、MinerU、CPU PyTorch 和 9 个本地模型 |
 | `SpecFlow-1.3.2-Default-Database-01.zip` | 基础规范库第 1 包 |
 | `SpecFlow-1.3.2-Default-Database-02.zip` | 基础规范库第 2 包 |
@@ -35,7 +35,9 @@ PDF.js 6.3.289、匹配的 Worker、中文 CMap、标准字体、JPEG2000/JBIG2 
 
 ## 独立组件更新
 
-打开「设置 → 组件更新」：检查更新 → 下载更新 → SHA256 校验 → 安装并重启。仅选择 `component-v...` 的知识组件版本，不采用数字孪生主程序的发布版本。更新保留现有 API 设置、对话、资料、索引和解析引擎。1.3.2 及更早版本需先手动运行一次 1.3.3，之后可在组件内更新。
+1.3.4 优先读取公开组件更新清单，避免 GitHub 匿名 API 配额耗尽导致 403，并修正 Electron 下载重定向的处理。无需 GitHub 令牌。
+
+打开「设置 → 组件更新」：检查更新 → 下载更新 → SHA256 校验 → 安装并重启。仅选择 `component-v...` 的知识组件版本，不采用数字孪生主程序的发布版本。更新保留现有 API 设置、对话、资料、索引和解析引擎。1.3.2 及更早版本需先手动运行一次 1.3.4，之后可在组件内更新。
 
 更新服务需连接 GitHub；规范检索、原文阅读和本地解析可离线运行。在线模型问答需要自己的有效 API 和网络。程序当前未做商业代码签名；源码、SHA256 和验收结果随 Release 提供。
 
