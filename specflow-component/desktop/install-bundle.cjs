@@ -9,8 +9,19 @@ function bundleManifest(root){
  return version(embedded.version)>version(local.version)||(embedded.version===local.version&&(embedded.revision||0)>(local.revision||0))?embedded:local;
 }
 function isBundleReady(root){const manifest=bundleManifest(root),marker=readJson(path.join(root,'resources-installed.json'));return !manifest||marker?.version===manifest.version&&(marker.revision||0)===(manifest.revision||0)&&manifest.required.every(p=>fs.existsSync(path.join(root,p)));}
+function adoptExistingBundle(root,manifest){
+ if(!readJson(path.join(root,'resources-installed.json'))||fs.existsSync(path.join(root,'resources-installing.json')))return false;
+ const metadata=new Set(['database/manifest.json','database/施工验收规范目录.csv']);
+ if(!manifest.required.filter(p=>!metadata.has(p)).every(p=>fs.existsSync(path.join(root,p))))return false;
+ for(const [target,source] of [['database/manifest.json','database-manifest.json'],['database/施工验收规范目录.csv','施工验收规范目录.csv']]){
+  const file=path.resolve(__dirname,'../presets',source);if(!fs.existsSync(file))return false;
+  fs.mkdirSync(path.dirname(path.join(root,target)),{recursive:true});fs.copyFileSync(file,path.join(root,target));
+ }
+ writeJson(path.join(root,'resources-installed.json'),{version:manifest.version,revision:manifest.revision||0,reusedExisting:true});return true;
+}
 async function installBundle(root,onProgress=()=>{},fetcher=globalThis.fetch){
  const manifest=bundleManifest(root);if(!manifest||isBundleReady(root))return;
+ if(adoptExistingBundle(root,manifest)){onProgress('沿用本机完整资料库与解析引擎');return;}
  for(const part of manifest.parts){
   if(path.basename(part.name)!==part.name)throw Error('资源包名称无效');
   const archive=path.join(root,part.name);
@@ -27,15 +38,18 @@ async function installBundle(root,onProgress=()=>{},fetcher=globalThis.fetch){
   }
   onProgress('正在校验 '+part.name);if(await digest(archive)!==part.sha256)throw Error('资源包校验失败：'+part.name);
  }
+ writeJson(path.join(root,'resources-installing.json'),{version:manifest.version,startedAt:new Date().toISOString()});
  for(const [i,part] of manifest.parts.entries()){
-  onProgress('正在解压预置资源 '+(i+1)+' / '+manifest.parts.length+'，首次启动需要一些时间…');
+  onProgress('正在安装 '+(part.title||part.name)+' · '+(i+1)+' / '+manifest.parts.length);
   await new Promise((resolve,reject)=>{
    // Paths are passed through environment variables, never interpolated as code.
-   const child=spawn('powershell.exe',['-NoProfile','-NonInteractive','-Command',"$ErrorActionPreference='Stop'; Expand-Archive -LiteralPath $env:SF_ARCHIVE -DestinationPath $env:SF_DEST -Force"],{windowsHide:true,env:{...process.env,SF_ARCHIVE:path.join(root,part.name),SF_DEST:root}});
+   const child=spawn('powershell.exe',['-NoProfile','-NonInteractive','-File',path.join(__dirname,'extract-resources.ps1')],{windowsHide:true,env:{...process.env,SF_ARCHIVE:path.join(root,part.name),SF_DEST:root,SF_PRESERVE:part.role==='database'?'1':'0'}});
+   child.stdout.on('data',chunk=>{const matches=String(chunk).match(/SF_EXTRACT (\d+)\/(\d+)/g);if(matches?.length)onProgress('正在安装 '+(part.title||part.name)+' · 已处理 '+matches.at(-1).slice(11)+' 个文件');});
    let error='';child.stderr.on('data',c=>error+=c);child.on('error',reject);child.on('close',code=>code===0?resolve():reject(Error('资源解压失败：'+error.slice(-1000))));
   });
  }
  for(const required of manifest.required)if(!fs.existsSync(path.join(root,required)))throw Error('资源文件不完整：'+required);
  writeJson(path.join(root,'resources-installed.json'),{version:manifest.version,revision:manifest.revision||0,installedAt:new Date().toISOString()});
+ fs.unlinkSync(path.join(root,'resources-installing.json'));
 }
-module.exports={installBundle,digest,isBundleReady};
+module.exports={installBundle,digest,isBundleReady,adoptExistingBundle};

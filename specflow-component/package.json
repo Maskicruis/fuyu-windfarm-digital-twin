@@ -1,6 +1,6 @@
 {
   "name": "specflow-knowledge-component",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "description": "SpecFlow-derived standalone file parsing, knowledge and language model component",
   "author": "Maskicruis",
   "license": "MIT",
@@ -43,6 +43,7 @@
       "NOTICE.md",
       "integration/**",
       "engines/**",
+      "presets/**",
       "resources-manifest.json"
     ],
     "win": {

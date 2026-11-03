@@ -1,34 +1,46 @@
-# SpecFlow 知识组件 1.3.1 · 规范与离线解析完整版
+# SpecFlow 知识组件 1.3.2 · 规范与离线解析完整版
 
 独立运行的文件存储、PDF 解析、规范检索、连续问答与原文阅读组件。基于 SpecFlow 0.11.1 裁剪，并针对批量规范处理作适配；保留 SpecFlow 图标、流式客户端、会话渲染及引用数据契约。
 
-[下载 EXE、资源与快速入门](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/component-v1.3.1) · [接入接口](integration/README.md)
+[下载 EXE、资源与快速入门](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/component-v1.3.2) · [接入接口](integration/README.md)
 
 完整版预置「施工验收规范」71 份 PDF 原件、已解析内容与持久化索引，以及独立 CPython 3.12.7、MinerU 3.4.5、CPU PyTorch、中文 OCR、版面和表格模型。无需另装 Python、MinerU 或下载默认解析模型。
 
-## 开始使用
+## 完整下载与默认数据库
 
-1. 将 `SpecFlow-Knowledge-Component-1.3.1-x64.exe` 放在有写入权限、至少约 10 GB 空余的目录，双击启动。首次自动下载资源、校验 SHA256 并解压；之后直接打开。离线部署时，从[基础资源 Release（1.3.0）](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/component-v1.3.0) 下载全部 `SpecFlow-1.3.0-Resources-*.zip` 和 `resources-manifest.json`，与 EXE 放在一起再启动，无需手动解压。保留 `workspace`，可沿用 API 配置与会话。
-2. 左侧「设置 → 模型接口」填写兼容 Chat Completions 的接口地址、模型名与密钥，点击保存。修改地址或模型时，密钥留空会保留已保存的值；清除密钥需使用单独按钮。
-3. 打开「文档数据库」，选择分组后上传 PDF；桌面版也可点击「导入文件夹」批量导入。重复导入同一文件夹会按源路径、大小与修改时间跳过未变文件。
-4. 首次启动自动登记全部预置规范；已预解析文件可立即检索，其余自动进入离线 OCR 队列。文字 PDF 优先快速提取，扫描件交给独立 OCR 队列。导入不等于完成解析，界面会明确显示已索引/待解析数量；未完成时也可阅读原 PDF。
-5. 在问答框选择回答模式。界面始终检索全部数据库，不会恢复旧会话的单文件/分组限制。点击答案的引用编号，打开对应 PDF 页并高亮原文；支持翻页和缩放。页码为 **PDF 文件页码**，可能与书籍印刷页码不同。
+本版 Release 直接提供 EXE、解析引擎和默认数据库，资源不再放在旧版发布页。下载下面全部 5 个文件，放在同一文件夹，双击 EXE；程序自动校验、解压并登记资料，无需安装 Python、MinerU 或另外下载默认模型。也无需再手动导入这些规范。
+
+| 文件 | 内容 |
+| --- | --- |
+| [SpecFlow-Knowledge-Component-1.3.2-x64.exe](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/component-v1.3.2/SpecFlow-Knowledge-Component-1.3.2-x64.exe) | 独立桌面程序 |
+| [SpecFlow-1.3.2-Parsing-Engine-Windows-x64.zip](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/component-v1.3.2/SpecFlow-1.3.2-Parsing-Engine-Windows-x64.zip) | 解析引擎、CPython、CPU PyTorch、中文 OCR、版面、表格模型与运行库 |
+| [SpecFlow-1.3.2-Default-Database-01.zip](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/component-v1.3.2/SpecFlow-1.3.2-Default-Database-01.zip) | 默认数据库第 1 包 |
+| [SpecFlow-1.3.2-Default-Database-02.zip](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/component-v1.3.2/SpecFlow-1.3.2-Default-Database-02.zip) | 默认数据库第 2 包 |
+| [SpecFlow-1.3.2-Default-Database-03.zip](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/component-v1.3.2/SpecFlow-1.3.2-Default-Database-03.zip) | 默认数据库第 3 包 |
+
+只下载 EXE 时，联网启动会自动获取同一发布页的上述资源包；下载全部 5 个文件后，可完全离线完成安装。建议至少留出 12 GB 空间用于资源包、解压后的程序和资料。首次安装显示当前包及文件进度。
+
+默认数据库包含用户提供的 **71 份施工验收规范 PDF 原件**，默认分组为「施工验收规范」。[在 GitHub 查看全部规范目录](presets/施工验收规范目录.csv)。资源快照中 **66 份已预解析并带 SQLite 检索索引**，可直接检索；其余 5 份原件同样随包、可阅读，首次运行继续后台 OCR，完成后自动加入检索。不会将尚未解析的文件计入已读证据。
+
+新增材料：打开「文档数据库 → 导入文档」，上传 PDF，或用「导入规范文件夹」批量追加。可以新建分组；不会替换默认规范库。个人新增资料、API 密钥和会话仅保存在本机，不会上传 GitHub。升级时保留已有资料及修正内容。
+
+## 开始问答
+
+1. 双击 EXE，等待首次资源安装；打开「文档数据库」可查看预置的 71 份规范。
+2. 在「设置 → 模型接口」填写接口地址、模型名和密钥并保存。修改地址或模型时，密钥留空会保留原值；清除需使用单独按钮。
+3. 选择回答模式并提问。严格规范模式只使用实际检索到的文件证据；引用可跳转 PDF 原文页并高亮。PDF 页码可能不同于书籍印刷页码。
 
 | 回答模式 | 有相关资料 | 没有相关资料 |
 | --- | --- | --- |
 | 通用模型 | 不检索资料库，使用对话历史 | 使用通用模型 |
-| 严格规范 | 仅按检索片段回答，并附引用 | 直接说明依据不足，不调用通用模型补充 |
-| 智能回答 | 使用严格资料分支，明确资料未覆盖的内容 | 切换通用模型，标明通用回答且不显示资料引用 |
-
-接口模型与上述「回答模式」分别设置。更换模型名在设置中保存；问答框中的选择控制是否检索与如何使用证据。流式输出逐块展示 API 返回的答案；开启「深度思考」后，也展示服务商返回的思考内容。默认关闭深度思考以减少首字等待；其他兼容接口不强行注入 DeepSeek 专有参数。
-
-中文目录的兼容修复随 `SpecFlow-1.3.0-Resources-Compatibility.zip` 提供：修复 FastText 模型在 Windows 中文安装路径下无法加载的问题。启动 OCR 前先检查语言模型；OCR 的窗口/子步骤百分比仅在日志中展示，整份资料入库前不会标记 100%。离线部署请下载资源清单列出的全部 10 个 ZIP。
+| 严格规范 | 仅按检索片段回答并附引用 | 说明依据不足 |
+| 智能回答 | 按相关资料回答，明确未覆盖内容 | 切换通用回答并标明来源分支 |
 
 ## 解析状态与自动恢复
 
 界面显示已完成页数、当前步骤、用时、输出活跃状态和已保存检查点。连续 5 分钟无输出，或 15 分钟没有完成新页面，会终止本次引擎并在队尾自动恢复一次；再次失败会保留原因，继续处理其他文件。每 8 页保存检查点，重启后按原件 SHA256 与解析选项匹配，从已保存页面之后继续。关闭程序会停止当前解析，下次启动继续；已完成文件可随时检索。
 
-1.3.1 复用 1.3.0 的 10 个固定资源包，新 EXE 内含引擎恢复适配。首次安装仍自动下载；已有完整引擎和资料的用户无需重复下载全部规范。
+1.3.2 使用同一 Release 内独立命名的引擎包和数据库包。已有完整本地资料库与引擎时沿用现有文件；数据库资源补齐缺失的预置内容，不覆盖用户修正或自建资料。
 
 ## 大量文件的处理方式
 

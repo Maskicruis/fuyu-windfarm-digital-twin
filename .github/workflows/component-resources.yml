@@ -1,0 +1,44 @@
+name: Build complete component resources
+on:
+  workflow_dispatch:
+    inputs:
+      release_id:
+        type: string
+        description: Draft component release ID
+        required: true
+      recipe_sha256:
+        type: string
+        required: true
+      delta_sha256:
+        type: string
+        required: true
+      codec_sha256:
+        type: string
+        required: true
+permissions:
+  contents: write
+concurrency:
+  group: component-resources-${{ inputs.release_id }}
+  cancel-in-progress: false
+jobs:
+  resources:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    env:
+      PYTHONUTF8: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Reconstruct and verify complete offline resource bundles
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          python scripts/rebuild-release-resources.py
+          --repository "${{ github.repository }}"
+          --release-id "${{ inputs.release_id }}"
+          --recipe-sha256 "${{ inputs.recipe_sha256 }}"
+          --delta-sha256 "${{ inputs.delta_sha256 }}"
+          --codec-sha256 "${{ inputs.codec_sha256 }}"
+          --output "${{ runner.temp }}\specflow-resources"

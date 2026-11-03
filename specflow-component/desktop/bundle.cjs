@@ -13,14 +13,21 @@ function initializeBundle(root,data){
  }
  const recordsFile=path.join(data,'documents.json'),settingsFile=path.join(data,'settings.json');
  const records=readJson(recordsFile,[]),existing=new Set(records.map(d=>d.id));
+ const groupsFile=path.join(data,'document-groups.json'),groups=readJson(groupsFile,[]),groupMap=new Map();let groupsChanged=false;
+ for(const seed of manifest.groups||[]){let group=groups.find(g=>g.id===seed.id||g.name===seed.name);if(!group){group={...seed,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};groups.push(group);groupsChanged=true;}groupMap.set(seed.id,group.id);}
+ if(groupsChanged)writeJson(groupsFile,groups);
  const library=path.resolve(root,manifest.library||'database/library');if(!library.startsWith(path.resolve(root)+path.sep))throw Error('预置资料库目录无效');let installed=0;
  for(const seed of manifest.documents||[]){
-  if(existing.has(seed.id))continue;
+  if(existing.has(seed.id)){
+   const record=records.find(d=>d.id===seed.id);
+   if(record.status!=='ready'&&seed.status==='ready'&&fs.existsSync(path.join(record.outputDir||path.join(library,seed.dirName),'document.json'))){for(const key of ['pages','chars','images','items','parser'])if(seed[key]!=null)record[key]=seed[key];Object.assign(record,{status:'ready',progress:100,progressText:'预置索引就绪',error:''});writeJson(recordsFile,records);}
+   continue;
+  }
   // Only direct children of the bundled library can be selected by a manifest.
   if(!seed.dirName||path.basename(seed.dirName)!==seed.dirName)throw Error('预置资料目录无效');
   const outputDir=path.join(library,seed.dirName),inputPath=path.join(outputDir,seed.sourceFile);
   if(path.dirname(inputPath)!==outputDir||!fs.existsSync(inputPath))throw Error('预置规范原件缺失：'+seed.title);
-  records.push({...seed,outputDir,inputPath,status:fs.existsSync(path.join(outputDir,'document.json'))?'ready':'queued',progressText:'随包预置资料',parseStage:'ocr',fastPassVersion:'1.1.0'});installed++;
+  records.push({...seed,groupId:groupMap.get(seed.groupId)||seed.groupId||'',outputDir,inputPath,status:fs.existsSync(path.join(outputDir,'document.json'))?'ready':'queued',progressText:'随包预置资料',parseStage:'ocr',fastPassVersion:'1.1.0'});installed++;
  }
  // Preserve keys, conversations and user paths during upgrades. The new library
  // is used on first launch; additional seeds on a custom library are copied.
