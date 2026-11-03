@@ -12,6 +12,7 @@ import urllib.request
 import urllib.parse
 import uuid
 import base64
+import os
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -95,8 +96,18 @@ def main():
         service = wait_service()
         pid=str(int(service['pid']))
         encoded=subprocess.check_output(['powershell.exe','-NoProfile','-Command',"[Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes((Get-Process -Id "+pid+").Path))"],text=True).strip()
-        runtime=Path(base64.b64decode(encoded).decode('utf-16-le')).parent/'resources/app/resources-manifest.json'
+        extracted=Path(base64.b64decode(encoded).decode('utf-16-le')).parent/'resources/app'
+        runtime=Path(service.get('runtimeRoot',str(extracted)))/'resources-manifest.json'
         assert json.loads(runtime.read_text('utf8'))==json.loads((ROOT/'specflow-component/resources-manifest.json').read_text('utf8'))
+        assert not runtime.resolve().is_relative_to(Path(os.environ['TEMP']).resolve()), 'Runtime must survive temporary-folder cleanup'
+        assert Path(service['data']).resolve()==data.resolve()
+        assert extracted.resolve().is_relative_to(Path(os.environ['TEMP']).resolve())
+        # Only this isolated EXE's verified extraction tree is renamed. No user
+        # library or other application's temporary folder is changed.
+        for name in ['src','lib']:
+            source=extracted/name
+            assert source.resolve().parent==extracted.resolve()
+            source.rename(extracted/(name+'-removed-by-proof'))
         base = 'http://127.0.0.1:'+str(service['port'])
         with urllib.request.urlopen(base, timeout=10) as r:
             assert r.read() == (ROOT/'specflow-component/ui.html').read_bytes()
@@ -172,7 +183,7 @@ def main():
                'context_history':True,'settings_and_history_survive_restart':True,
                'configured_port_survives_restart':True,'provider':'local mock, no real model API call',
                'native_upload_search_page_range_singleton':bool(args.pdf),
-               'data_isolation':True}
+               'data_isolation':True,'persistent_runtime_outside_temp':True,'works_after_temporary_src_and_pdf_modules_removed':True}
         (ROOT/'开发源码/验收产物/SpecFlow-binary-verification.json').write_text(json.dumps(proof,indent=2),'utf-8')
         print(json.dumps(proof),flush=True)
     finally:

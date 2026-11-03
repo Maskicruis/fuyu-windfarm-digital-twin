@@ -572,6 +572,7 @@ canvas{box-shadow:var(--shadow)}
             
             <button class="settings-tab active" data-act="settingsTab" data-settings-tab="parser"><svg viewBox="0 0 24 24" fill="none"><path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 5v4M8 15v4" stroke-width="1.7" stroke-linecap="round"/></svg><span class="settings-tab-copy"><b>资料与解析</b><small>资料库、MinerU 与识别参数</small></span></button>
             <button class="settings-tab" data-act="settingsTab" data-settings-tab="model"><svg viewBox="0 0 24 24" fill="none"><path d="M7 5.5h10A2.5 2.5 0 0 1 19.5 8v8A2.5 2.5 0 0 1 17 18.5H7A2.5 2.5 0 0 1 4.5 16V8A2.5 2.5 0 0 1 7 5.5Z" stroke-width="1.6"/><path d="M8 10h8M8 14h5" stroke-width="1.6" stroke-linecap="round"/></svg><span class="settings-tab-copy"><b>模型接口</b><small>对话模型、向量模型与密钥</small></span></button>
+            <button class="settings-tab" data-act="settingsTab" data-settings-tab="updates"><svg viewBox="0 0 24 24" fill="none"><path d="M19 8a8 8 0 1 0 1 8M19 3v5h-5M12 7v6l4 2" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="settings-tab-copy"><b>组件更新</b><small>独立更新、下载校验与重启</small></span></button>
             
             
           </nav>
@@ -588,6 +589,11 @@ canvas{box-shadow:var(--shadow)}
             </section>
             
             
+            <section class="settings-pane" data-settings-pane="updates">
+              <header class="settings-pane-head"><h3>组件更新</h3><p>单独更新 SpecFlow 知识组件，保留本机资料、API 设置与会话。</p></header>
+              <div class="settings-section"><div class="settings-section-title">当前知识组件 <span id="updateCurrentVersion">—</span></div><p class="field-help">发布源：Maskicruis/fuyu-windfarm-digital-twin · component-v 系列</p><div id="componentUpdateState" class="parser-state" role="status" aria-live="polite">正在读取更新状态…</div><progress id="componentUpdateProgress" max="100" value="0" style="width:100%;height:8px;accent-color:#2bcdcd" hidden></progress><div class="settings-actions"><button class="btn" data-act="checkComponentUpdate" id="checkComponentUpdate">检查更新</button><button class="btn btn-primary" data-act="downloadComponentUpdate" id="downloadComponentUpdate" hidden>下载更新</button><button class="btn btn-primary" data-act="installComponentUpdate" id="installComponentUpdate" hidden>安装并重启</button></div><p class="field-help">下载完成后先校验 SHA256，再安装并重启。更新仅替换知识组件程序，沿用现有预置规范库、个人材料和解析引擎。</p><pre id="componentUpdateNotes" class="field-help" style="white-space:pre-wrap;max-height:220px;overflow:auto" hidden></pre></div>
+              <div class="settings-section"><div class="settings-section-title">运行文件与解析</div><p class="field-help">PDF 阅读器、字体和后台任务模块保存在持久运行目录，每次启动校验并修复缺失文件。内置解析引擎保留每 8 页检查点，长文档默认等待上限为 8 小时，同时继续检测停滞。</p></div>
+            </section>
             <footer class="settings-footer"><div class="field-help">所有设置保存在本机应用数据目录。</div><div class="settings-actions desktop-only"><button class="btn" data-act="openData">打开数据目录</button><button class="btn" data-act="closeSettings">关闭设置</button></div></footer>
           </div>
         </div>
@@ -1044,7 +1050,7 @@ function closeSettings(){
   document.body.classList.remove('settings-open');
 }
 function selectSettingsTab(name){
-  var allowed=['parser','model']; var next=allowed.indexOf(name)>=0?name:'parser'; ACTIVE_SETTINGS_TAB=next;
+  var allowed=['parser','model','updates']; var next=allowed.indexOf(name)>=0?name:'parser'; ACTIVE_SETTINGS_TAB=next;
   document.querySelectorAll('[data-settings-tab]').forEach(function(button){ button.classList.toggle('active',button.getAttribute('data-settings-tab')===next); });
   document.querySelectorAll('[data-settings-pane]').forEach(function(pane){ pane.classList.toggle('active',pane.getAttribute('data-settings-pane')===next); });
   try{ localStorage.setItem('specflow-settings-tab',next); }catch(e){}
@@ -1065,6 +1071,28 @@ function initDesktop(){
   var settingsPanel=document.getElementById('settingsSection'); if(settingsPanel) document.body.appendChild(settingsPanel);
   DESKTOP.app.info().then(function(info){var status=document.getElementById('desktopRuntime');if(status)status.textContent=(info.fallback?'端口 '+info.configuredPort+' 被占用 · 临时端口 ':'本地服务 · 端口 ')+info.port;}).catch(function(){var status=document.getElementById('desktopRuntime');if(status)status.textContent='本地服务已连接';});
   loadLlmState();
+  refreshComponentUpdate();
+}
+var componentUpdateTimer=null;
+async function refreshComponentUpdate(){
+  var status=document.getElementById('componentUpdateState');
+  if(!DESKTOP?.updates){if(status)status.textContent='请在独立桌面组件中检查与安装更新。';document.getElementById('checkComponentUpdate').disabled=true;return;}
+  try{var value=await DESKTOP.updates.status();renderComponentUpdate(value);}catch(error){status.textContent='无法读取更新状态：'+error.message;}
+}
+function renderComponentUpdate(value){
+ document.getElementById('updateCurrentVersion').textContent='V'+value.currentVersion;
+ document.getElementById('componentUpdateState').textContent=value.message+(value.phase==='downloading'?' · '+value.progress+'%':'');
+ var check=document.getElementById('checkComponentUpdate'),download=document.getElementById('downloadComponentUpdate'),install=document.getElementById('installComponentUpdate'),progress=document.getElementById('componentUpdateProgress'),notes=document.getElementById('componentUpdateNotes');
+ check.disabled=value.busy||value.phase==='installing';download.hidden=!value.availableVersion||['ready','installing'].includes(value.phase);download.disabled=value.busy;install.hidden=value.phase!=='ready';install.disabled=value.busy||!value.canInstall;
+ progress.hidden=!['downloading','ready','installing'].includes(value.phase);progress.value=Math.max(0,Math.min(100,Number(value.progress)||0));notes.hidden=!value.notes;notes.textContent=value.notes||'';
+ if(value.busy&&!componentUpdateTimer)componentUpdateTimer=setInterval(refreshComponentUpdate,1000);
+ if(!value.busy&&componentUpdateTimer){clearInterval(componentUpdateTimer);componentUpdateTimer=null;}
+}
+async function componentUpdateAction(action){
+ if(!DESKTOP?.updates)return;
+ if(!componentUpdateTimer)componentUpdateTimer=setInterval(refreshComponentUpdate,1000);
+ document.getElementById('componentUpdateState').textContent='正在处理组件更新…';
+ try{renderComponentUpdate(await DESKTOP.updates[action]());}catch(error){await refreshComponentUpdate();document.getElementById('componentUpdateState').textContent=error.message;}
 }
 function updateFileMeta(){
   var f=document.getElementById('file'), meta=document.getElementById('fileMeta'); if(!f||!meta) return;
@@ -1072,21 +1100,23 @@ function updateFileMeta(){
   var names=Array.from(f.files).map(function(x){return x.name;});
   meta.textContent=f.files.length===1?names[0]:(f.files.length+' 个文件 · '+names.join('、'));
 }
+var citationOpenVersion=0;
 async function openCitation(docId,page,ref,bbox,bboxNormalized,itemId){
+  var openVersion=++citationOpenVersion;
   var d=DOCS.find(function(x){return x.id===docId;});
   CUR=d||{id:docId,title:docId};
   document.getElementById('mtitle').textContent='核查原文：'+(d?d.title:docId);
   document.getElementById('modal').style.display='flex';document.getElementById('modal').classList.add('reader-paged');
   document.getElementById('mleft').innerHTML='<div class="muted" style="padding:20px">正在读取解析内容…</div>';
   document.getElementById('mkw').textContent='第 '+Number(page||1)+' 页'+(ref?' · 条文 '+ref:'')+' · 正在加载原文';
-  try{ var v=await api('view?id='+encodeURIComponent(docId)+'&page='+Math.max(1,Number(page)||1)); CURITEMS=v.items||[]; renderMd(CURITEMS,docId); }
-  catch(e){ CURITEMS=[]; document.getElementById('mleft').innerHTML='<div class="muted" style="padding:20px">解析内容加载失败：'+esc(e.message)+'</div>'; }
+  try{ var v=await api('view?id='+encodeURIComponent(docId)+'&page='+Math.max(1,Number(page)||1)); if(openVersion!==citationOpenVersion)return;CURITEMS=v.items||[]; renderMd(CURITEMS,docId); }
+  catch(e){ if(openVersion!==citationOpenVersion)return;CURITEMS=[]; document.getElementById('mleft').innerHTML='<div class="muted" style="padding:20px">本页解析文字尚未就绪，仍可阅读右侧原 PDF。</div>'; }
   var item=CURITEMS.find(function(row){return itemId&&(row.itemId===itemId||row.id===itemId);});
   var itemIndex=item?CURITEMS.indexOf(item):CURITEMS.findIndex(function(row){return Number(row.page)===Number(page);});
   var anchor=document.querySelector('#mleft [data-idx="'+itemIndex+'"]');if(anchor)anchor.scrollIntoView({block:'center'});
   var pdfBox=bbox||(item&&item.bbox&&item.bbox.join(',')||'');
   var normalizedBox=bboxNormalized||(item&&item.bboxNormalized&&item.bboxNormalized.join(',')||'');
-  if(window.VIEWER){ try{ await window.VIEWER.load(docId,{page:Number(page),keyword:ref||'',bbox:pdfBox,normalizedBbox:normalizedBox}); }catch(e){ document.getElementById('mkw').textContent='定位失败：'+e.message; } }
+  if(window.VIEWER){ try{ await window.VIEWER.load(docId,{page:Number(page),keyword:ref||'',bbox:pdfBox,normalizedBbox:normalizedBox}); }catch(e){ if(openVersion===citationOpenVersion)document.getElementById('mkw').textContent='定位失败：'+e.message; } }
 }
 var readerPageRequest=0;
 document.addEventListener('kb-reader-page',async function(event){var n=++readerPageRequest;try{var result=await api('view?id='+encodeURIComponent(event.detail.id)+'&page='+event.detail.page);if(n!==readerPageRequest||CUR?.id!==event.detail.id)return;CURITEMS=result.items||[];renderMd(CURITEMS,event.detail.id);var index=CURITEMS.findIndex(function(row){return Number(row.page)===Number(event.detail.page);}),anchor=document.querySelector('#mleft [data-idx="'+index+'"]');if(anchor)anchor.scrollIntoView({block:'start'});}catch(e){document.getElementById('mleft').textContent='本页文字尚未就绪，仍可阅读右侧原 PDF。';}});
@@ -1139,6 +1169,9 @@ document.addEventListener('click',async function(e){
   else if(act==='cancelGroup'){ cancelGroup(); }
   else if(act==='confirmDeleteGroup'){ confirmDeleteGroup(); }
   else if(act==='settingsTab'){ selectSettingsTab(t.getAttribute('data-settings-tab')); }
+  else if(act==='checkComponentUpdate'){ componentUpdateAction('check'); }
+  else if(act==='downloadComponentUpdate'){ componentUpdateAction('download'); }
+  else if(act==='installComponentUpdate'){ componentUpdateAction('install'); }
   else if(act==='openData'&&DESKTOP){ DESKTOP.app.openDataFolder(); }
   else if(act==='closeSettings'){ closeSettings(); }
   else if(act==='winMin'&&DESKTOP){ DESKTOP.window.minimize(); }
@@ -1187,9 +1220,12 @@ initDesktop(); load(); loadConversations(); setTimeout(openCitationFromLocation,
 </script>
 
 <script type="module">
-import * as pdfjs from '/lib/pdf.min.mjs';
-pdfjs.GlobalWorkerOptions.workerSrc='/lib/pdf.worker.min.mjs';
-var docTask=null;
+var pdfjs=null,pdfjsPromise=null,pdfjsAttempt=0;
+async function loadPdfEngine(){
+ if(!pdfjsPromise){var suffix='?v='+encodeURIComponent(document.getElementById('componentVersion').textContent||'1.3.3')+'&attempt='+pdfjsAttempt;pdfjsPromise=import('/lib/pdf.min.mjs'+suffix).then(function(module){module.GlobalWorkerOptions.workerSrc='/lib/pdf.worker.min.mjs'+suffix;return module;});}
+ try{return await pdfjsPromise;}catch(error){pdfjsPromise=null;pdfjsAttempt++;throw Error('PDF 阅读模块加载失败，请重试或在组件设置中更新：'+error.message);}
+}
+var docTask=null,pdfReadController=null;
 if(!Uint8Array.prototype.toHex)Uint8Array.prototype.toHex=function(){return Array.from(this,function(n){return n.toString(16).padStart(2,'0');}).join('');};
 if(!Math.sumPrecise)Math.sumPrecise=function(values){var sum=0,c=0;for(var v of values){var y=v-c,t=sum+y;c=(t-sum)-y;sum=t;}return sum;};
 var doc=null, curPage=1, scale=1.3, kw='', hlBbox=null, hlNormalized=null, renderVersion=0, loadVersion=0, renderTask=null, lastLoad=null;
@@ -1208,19 +1244,28 @@ async function fitPage(){
 }
 async function load(id,target){
   var version=++loadVersion; lastLoad={id:id,target:Object.assign({},target||{})};
+  if(pdfReadController)pdfReadController.abort();pdfReadController=new AbortController();var controller=pdfReadController;
   if(renderTask){ try{renderTask.cancel();}catch(_){} renderTask=null; }
   var previous=doc; doc=null; if(previous&&previous.destroy){ Promise.resolve(previous.destroy()).catch(function(){}); }
   bar();
   try{
+    pdfjs=await loadPdfEngine();if(version!==loadVersion)return;
     if(docTask){docTask.destroy().catch(function(){});}
-    var task=pdfjs.getDocument({url:'/api/pdf?id='+encodeURIComponent(id),cMapUrl:'/lib/cmaps/',cMapPacked:true,standardFontDataUrl:'/lib/standard_fonts/',disableAutoFetch:true,disableStream:true,rangeChunkSize:262144});docTask=task;
+    var response=await fetch('/api/pdf?id='+encodeURIComponent(id),{signal:controller.signal,cache:'no-store'});if(!response.ok)throw Error('原件读取失败 HTTP '+response.status);
+    var expected=Number(response.headers.get('content-length'))||0,received=0,chunks=[],reader=response.body.getReader();
+    while(true){var part=await reader.read();if(part.done)break;chunks.push(part.value);received+=part.value.length;if(version!==loadVersion){await reader.cancel();return;}viewerState('正在完整读取 PDF：'+(received/1024/1024).toFixed(1)+' MB'+(expected?' / '+(expected/1024/1024).toFixed(1)+' MB · '+Math.floor(received/expected*100)+'%':''),false);}
+    reader.releaseLock();if(expected&&received!==expected)throw Error('原件未完整读入，请重试');
+    var complete=new Uint8Array(received),offset=0;for(var chunk of chunks){complete.set(chunk,offset);offset+=chunk.length;}chunks=[];
+    if(String.fromCharCode.apply(null,complete.subarray(0,5))!=='%PDF-')throw Error('读取结果不是 PDF 原件');
+    viewerState('PDF 已完整读入，正在解码并渲染目标页…',false);
+    var task=pdfjs.getDocument({data:complete,cMapUrl:'/lib/cmaps/',cMapPacked:true,standardFontDataUrl:'/lib/standard_fonts/',wasmUrl:'/lib/wasm/',iccUrl:'/lib/iccs/',stopAtErrors:true});docTask=task;
     var nextDoc=await task.promise;
     if(version!==loadVersion){ try{await nextDoc.destroy();}catch(_){} return; }
     doc=nextDoc; target=target||{}; curPage=Math.min(doc.numPages,Math.max(1,Number(target.page)||1)); kw=target.keyword||''; hlBbox=parseBox(target.bbox); hlNormalized=parseBox(target.normalizedBbox);
     await new Promise(function(resolve){requestAnimationFrame(function(){requestAnimationFrame(resolve);});});
     await fitPage();
     if(version!==loadVersion) return; box.classList.remove('loading'); var state=document.getElementById('viewerState'); if(state)state.remove();
-  }catch(e){ if(version!==loadVersion)return; viewerState('PDF 加载失败：'+(e&&e.message?e.message:e),true); document.getElementById('mkw').textContent='PDF 加载失败，可点击“重新加载”重试'; }
+  }catch(e){ if(version!==loadVersion)return;pdfjsPromise=null;pdfjsAttempt++;viewerState('PDF 加载失败：'+(e&&e.message?e.message:e),true); document.getElementById('mkw').textContent='PDF 加载失败，可点击“重新加载”重试'; }
 }
 async function render(){
   if(!doc) return;
@@ -1268,7 +1313,7 @@ function drawHighlights(page,vp){
   }catch(e){ try{ document.getElementById('mkw').textContent=kw+' (err:'+e.message+')'; }catch(_){} }
 }
 function goto(p,k,b,normalized){ if(p&&doc) curPage=Math.min(doc.numPages,Math.max(1,p)); kw=k||''; hlBbox=parseBox(b); hlNormalized=parseBox(normalized);if(!hlBbox&&!hlNormalized)document.getElementById('mkw').textContent='PDF 第 '+curPage+' 页 · 原文阅读';document.dispatchEvent(new CustomEvent('kb-reader-page',{detail:{id:lastLoad?.id,page:curPage}})); render(); }
-function closeViewer(){ loadVersion+=1; renderVersion+=1; if(renderTask){try{renderTask.cancel();}catch(_){} renderTask=null;} var previous=doc; doc=null; if(docTask){docTask.destroy().catch(function(){});docTask=null;} box.classList.remove('loading'); box.innerHTML=''; }
+function closeViewer(){ citationOpenVersion++;loadVersion+=1; renderVersion+=1;if(pdfReadController){pdfReadController.abort();pdfReadController=null;} if(renderTask){try{renderTask.cancel();}catch(_){} renderTask=null;} var previous=doc; doc=null; if(docTask){docTask.destroy().catch(function(){});docTask=null;} box.classList.remove('loading'); box.innerHTML=''; }
 document.addEventListener('click',function(e){
   var t=e.target.closest?e.target.closest('[data-act]'):null; if(!t) return;
   var a=t.getAttribute('data-act');

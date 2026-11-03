@@ -1,5 +1,5 @@
 {
-  "version": "1.3.2",
+  "version": "1.3.3",
   "parts": [
     {
       "name": "SpecFlow-1.3.2-Parsing-Engine-Windows-x64.zip",
@@ -7,7 +7,8 @@
       "title": "离线解析引擎、运行库与模型",
       "bytes": 542436774,
       "sha256": "226dbe93ae9b16bd3d2bc0b95b5c84c8b635ac631a380fed5a29d9299e0d7fbd",
-      "url": "https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/component-v1.3.2/SpecFlow-1.3.2-Parsing-Engine-Windows-x64.zip"
+      "url": "https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/component-v1.3.3/SpecFlow-1.3.2-Parsing-Engine-Windows-x64.zip",
+      "base": true
     },
     {
       "name": "SpecFlow-1.3.2-Default-Database-01.zip",
@@ -15,7 +16,8 @@
       "title": "默认施工验收规范数据库 1/3",
       "bytes": 979591309,
       "sha256": "d966ac16aa9b0fde5840a9b8c7a98eb785995e2ea86478db3025b2c9725a5fe3",
-      "url": "https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/component-v1.3.2/SpecFlow-1.3.2-Default-Database-01.zip"
+      "url": "https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/component-v1.3.3/SpecFlow-1.3.2-Default-Database-01.zip",
+      "base": true
     },
     {
       "name": "SpecFlow-1.3.2-Default-Database-02.zip",
@@ -23,7 +25,8 @@
       "title": "默认施工验收规范数据库 2/3",
       "bytes": 1101849691,
       "sha256": "37d8e2a1ed29d3aee8e8b0731084be083d6ac52047e48a083fdd01077b435fd2",
-      "url": "https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/component-v1.3.2/SpecFlow-1.3.2-Default-Database-02.zip"
+      "url": "https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/component-v1.3.3/SpecFlow-1.3.2-Default-Database-02.zip",
+      "base": true
     },
     {
       "name": "SpecFlow-1.3.2-Default-Database-03.zip",
@@ -31,7 +34,16 @@
       "title": "默认施工验收规范数据库 3/3",
       "bytes": 263553870,
       "sha256": "edae77a083e34ca73e4dd0390c5cfa014c5808b53062ab13520390159fb4d483",
-      "url": "https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/component-v1.3.2/SpecFlow-1.3.2-Default-Database-03.zip"
+      "url": "https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/component-v1.3.3/SpecFlow-1.3.2-Default-Database-03.zip",
+      "base": true
+    },
+    {
+      "name": "SpecFlow-1.3.3-Preindexed-Database-Update.zip",
+      "role": "database",
+      "title": "补齐全部 71 份规范的预解析内容",
+      "bytes": 56396183,
+      "sha256": "65cc664d86a01ec63d2b992df36bde9a549eb35021e93c3e5e3925120f392782",
+      "url": "https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/component-v1.3.3/SpecFlow-1.3.3-Preindexed-Database-Update.zip"
     }
   ],
   "required": [
@@ -123,10 +135,107 @@
     "engines/models/models/TabCls/paddle_table_cls/PP-LCNet_x1_0_table_cls.onnx",
     "engines/models/models/TabRec/SlanetPlus/slanet-plus.onnx",
     "engines/models/models/TabRec/UnetStructure/unet.onnx",
-    "engines/python/Lib/site-packages/fast_langdetect/ft_detect/resources/lid.176.ftz"
+    "engines/python/Lib/site-packages/fast_langdetect/ft_detect/resources/lid.176.ftz",
+    "workspace/资料库/JGJ 79-2012 建筑地基处理技术规范--1e6e3c76/document.json",
+    "workspace/资料库/JGJ 94-2008 建筑桩基技术规范--e6c33553/document.json",
+    "workspace/资料库/NBT 10087-2018 陆上风电场工程施工安装技术规程--236a1eaa/document.json",
+    "workspace/资料库/NBT 31022-2012 风力发电工程达标投产验收规程--ed5150b4/document.json",
+    "workspace/资料库/NBT 31084-2016 风力发电工程建设施工监理规范--c38170b6/document.json"
   ],
   "presetCounts": {
     "total": 71,
-    "indexed": 66
-  }
+    "indexed": 71
+  },
+  "revision": 1,
+  "baseRequired": [
+    "engines/python/python.exe",
+    "engines/python/python312._pth",
+    "engines/python/vcruntime140_threads.dll",
+    "engines/python/Lib/site-packages/torch/testing/__init__.py",
+    "engines/models/models/Layout/PP-DocLayoutV2/model.safetensors",
+    "engines/run_mineru.py",
+    "database/manifest.json",
+    "database/施工验收规范目录.csv",
+    "workspace/资料库/.search-index.sqlite",
+    "workspace/资料库/DLT 5161.1-2018 电气装置安装工程质量检验及评定规程 第1部分：通则--24ea1b5d/DLT 5161.1-2018 电气装置安装工程质量检验及评定规程 第1部分：通则.pdf",
+    "workspace/资料库/DLT 5161.11-2018 电气装置安装工程质量检验及评定规程 第11部分：通信工程施工质量检验--588ef81f/DLT 5161.11-2018 电气装置安装工程质量检验及评定规程 第11部分：通信工程施工质量检验.pdf",
+    "workspace/资料库/DLT 5161.12-2018 电气装置安装工程质量检验及评定规程 第12部分：低压电器施工质量检验--d13d9cde/DLT 5161.12-2018 电气装置安装工程质量检验及评定规程 第12部分：低压电器施工质量检验.pdf",
+    "workspace/资料库/DLT 5161.15-2018 电气装置安装工程质量检验及评定规程 第15部分：爆炸及火灾危险环境电气装置施工质量检验--149187c8/DLT 5161.15-2018 电气装置安装工程质量检验及评定规程 第15部分：爆炸及火灾危险环境电气装置施工质量检验.pdf",
+    "workspace/资料库/DLT 5161.17-2018 电气装置安装工程质量检验及评定规程 第17部分：电气照明装置施工质量检验--ab67d1ed/DLT 5161.17-2018 电气装置安装工程质量检验及评定规程 第17部分：电气照明装置施工质量检验.pdf",
+    "workspace/资料库/DLT 5161.2-2018 电气装置安装工程质量检验及评定规程 第2部分：高压电器施工质量检验--2852d959/DLT 5161.2-2018 电气装置安装工程质量检验及评定规程 第2部分：高压电器施工质量检验.pdf",
+    "workspace/资料库/DLT 5161.3-2018 电气装置安装工程质量检验及评定规程 第3部分：电力变压器、油浸电抗器、互感器施工质量检验--cea97393/DLT 5161.3-2018 电气装置安装工程质量检验及评定规程 第3部分：电力变压器、油浸电抗器、互感器施工质量检验.pdf",
+    "workspace/资料库/DLT 5161.4-2018 电气装置安装工程质量检验及评定规程第4部分：母线装置施工质量检验--a2ea06ae/DLT 5161.4-2018 电气装置安装工程质量检验及评定规程第4部分：母线装置施工质量检验.pdf",
+    "workspace/资料库/DLT 5161.5-2018 电气装置安装工程质量检验及评定规程 第5部分：电缆线路施工质量检验--4dd6aac9/DLT 5161.5-2018 电气装置安装工程质量检验及评定规程 第5部分：电缆线路施工质量检验.pdf",
+    "workspace/资料库/DLT 5161.6-2018 电气装置安装工程质量检验及评定规程 第6部分：接地装置施工质量检验--f2a6413d/DLT 5161.6-2018 电气装置安装工程质量检验及评定规程 第6部分：接地装置施工质量检验.pdf",
+    "workspace/资料库/DLT 5161.7-2018 电气装置安装工程质量检验及评定规程 第7部分：旋转电机施工质量检验--eb0f3ce5/DLT 5161.7-2018 电气装置安装工程质量检验及评定规程 第7部分：旋转电机施工质量检验.pdf",
+    "workspace/资料库/DLT 5210.1-2021 电力建设施工质量验收规程 第1部分：土建工程--be393c6b/DLT 5210.1-2021 电力建设施工质量验收规程 第1部分：土建工程.pdf",
+    "workspace/资料库/DLT 5814-2020 变电站、换流站土建工程施工质量验收规程--1c2c9e1c/DLT 5814-2020 变电站、换流站土建工程施工质量验收规程.pdf",
+    "workspace/资料库/DLT 5840-2021 电气装置安装工程+电力变压器、油浸电抗器、互感器施工及验收规范--6e83d068/DLT 5840-2021 电气装置安装工程+电力变压器、油浸电抗器、互感器施工及验收规范.pdf",
+    "workspace/资料库/DLT 5841-2021 电气装置安装工程母线装置施工及验收规范--239cb3c8/DLT 5841-2021 电气装置安装工程母线装置施工及验收规范.pdf",
+    "workspace/资料库/DLT 5852-2022 电气装置安装工程接地装置施工及验收规范--f8b8b4df/DLT 5852-2022 电气装置安装工程接地装置施工及验收规范.pdf",
+    "workspace/资料库/DLT 5891-2024 电气装置安装工程 电缆线路施工及验收规范--2eb8f7b2/DLT 5891-2024 电气装置安装工程 电缆线路施工及验收规范.pdf",
+    "workspace/资料库/DLT 5899-2025 电气装置安装工程 低压电器施工及验收规范--c6877557/DLT 5899-2025 电气装置安装工程 低压电器施工及验收规范.pdf",
+    "workspace/资料库/DLT 5901-2025 66kV及以下架空电力线路施工及验收规范--9103847f/DLT 5901-2025 66kV及以下架空电力线路施工及验收规范.pdf",
+    "workspace/资料库/GB 50026-2020 工程测量标准--40a5b091/GB 50026-2020 工程测量标准.pdf",
+    "workspace/资料库/GB 50147-2010 电气装置安装工程 高压电器施工及验收规范--8fb34bef/GB 50147-2010 电气装置安装工程 高压电器施工及验收规范.pdf",
+    "workspace/资料库/GB 50148-2010 电气装置安装工程 电力变压器、油浸电抗器、互感器施工及验收规范--3b7e9afb/GB 50148-2010 电气装置安装工程 电力变压器、油浸电抗器、互感器施工及验收规范.pdf",
+    "workspace/资料库/GB 50149-2010 电气装置安装工程 母线装置施工及验收规范--5bf1fca7/GB 50149-2010 电气装置安装工程 母线装置施工及验收规范.pdf",
+    "workspace/资料库/GB 50150-2016 电气装置安装工程 电气设备交接试验标准--bd52ab95/GB 50150-2016 电气装置安装工程 电气设备交接试验标准.pdf",
+    "workspace/资料库/GB 50164-2011 混凝土质量控制标准--aa87075a/GB 50164-2011 混凝土质量控制标准.pdf",
+    "workspace/资料库/GB 50166-2019 火灾自动报警系统施工及验收标准--db16cd36/GB 50166-2019 火灾自动报警系统施工及验收标准.pdf",
+    "workspace/资料库/GB 50168-2018 电气装置安装工程 电缆线路施工及验收标准--3d5e77da/GB 50168-2018 电气装置安装工程 电缆线路施工及验收标准.pdf",
+    "workspace/资料库/GB 50169-2016 电气装置安装工程 接地装置施工及验收规范--b82ef008/GB 50169-2016 电气装置安装工程 接地装置施工及验收规范.pdf",
+    "workspace/资料库/GB 50171-2012 电气装置安装工程 盘、柜及二次回路接线施工及验收规范--c84ed6a4/GB 50171-2012 电气装置安装工程 盘、柜及二次回路接线施工及验收规范.pdf",
+    "workspace/资料库/GB 50172-2012 电气装置安装工程 蓄电池施工及验收规范--4d04d96a/GB 50172-2012 电气装置安装工程 蓄电池施工及验收规范.pdf",
+    "workspace/资料库/GB 50173-2014 电气装置安装工程 66kV及以下架空电力线路施工及验收规范--29334f35/GB 50173-2014 电气装置安装工程 66kV及以下架空电力线路施工及验收规范.pdf",
+    "workspace/资料库/GB 50194-2014 建设工程施工现场供用电安全规范--5b6db4e2/GB 50194-2014 建设工程施工现场供用电安全规范.pdf",
+    "workspace/资料库/GB 50201-2012 土方与爆破工程施工及验收规范--18d92678/GB 50201-2012 土方与爆破工程施工及验收规范.pdf",
+    "workspace/资料库/GB 50202-2018 建筑地基基础工程施工质量验收标准--6528b3a2/GB 50202-2018 建筑地基基础工程施工质量验收标准.pdf",
+    "workspace/资料库/GB 50203-2011 砌体结构工程施工质量验收规范--758e2203/GB 50203-2011 砌体结构工程施工质量验收规范.pdf",
+    "workspace/资料库/GB 50204-2015 混凝土结构工程施工质量验收规范--b5ac5b2e/GB 50204-2015 混凝土结构工程施工质量验收规范.pdf",
+    "workspace/资料库/GB 50205-2020 钢结构工程施工质量验收标准--8e250378/GB 50205-2020 钢结构工程施工质量验收标准.pdf",
+    "workspace/资料库/GB 50208-2011 地下防水工程质量验收规范--58666ccb/GB 50208-2011 地下防水工程质量验收规范.pdf",
+    "workspace/资料库/GB 50209-2010 建筑地面工程施工质量验收规范--31f01ec2/GB 50209-2010 建筑地面工程施工质量验收规范.pdf",
+    "workspace/资料库/GB 50210-2018 建筑装饰装修工程质量验收标准--0210266f/GB 50210-2018 建筑装饰装修工程质量验收标准.pdf",
+    "workspace/资料库/GB 50233-2014 110kV～750kV架空输电线路施工及验收规范--9ad09c7e/GB 50233-2014 110kV～750kV架空输电线路施工及验收规范.pdf",
+    "workspace/资料库/GB 50254-2014 电气装置安装工程 低压电器施工及验收规范--1f713974/GB 50254-2014 电气装置安装工程 低压电器施工及验收规范.pdf",
+    "workspace/资料库/GB 50300-2013 建筑工程施工质量验收统一标准--0fbe57ba/GB 50300-2013 建筑工程施工质量验收统一标准.pdf",
+    "workspace/资料库/GB 50303-2015 建筑电气工程施工质量验收规范--9670334b/GB 50303-2015 建筑电气工程施工质量验收规范.pdf",
+    "workspace/资料库/GB 50496-2018 大体积混凝土施工标准--d12ad1bf/GB 50496-2018 大体积混凝土施工标准.pdf",
+    "workspace/资料库/GB 50666-2011 混凝土结构工程施工规范--4051fd08/GB 50666-2011 混凝土结构工程施工规范.pdf",
+    "workspace/资料库/GB 55003-2021 建筑与市政地基基础通用规范--ffaa351d/GB 55003-2021 建筑与市政地基基础通用规范.pdf",
+    "workspace/资料库/GBT 19568-2025 风能发电系统 风力发电机组装配和安装规范--c41c13c4/GBT 19568-2025 风能发电系统 风力发电机组装配和安装规范.pdf",
+    "workspace/资料库/GBT 20319-2017 风力发电机组 验收规范--dd57e4dc/GBT 20319-2017 风力发电机组 验收规范.pdf",
+    "workspace/资料库/GBT 21431-2023 建筑物雷电防护装置检测技术规范--b2b6a4ae/GBT 21431-2023 建筑物雷电防护装置检测技术规范.pdf",
+    "workspace/资料库/GBT 31997-2015 风力发电场项目建设工程验收规程--5c54c918/GBT 31997-2015 风力发电场项目建设工程验收规程.pdf",
+    "workspace/资料库/GBT 32223-2015 建筑门窗五金件 通用要求--03e6a64c/GBT 32223-2015 建筑门窗五金件 通用要求.pdf",
+    "workspace/资料库/GBT 37898-2019 风力发电机组 吊装安全技术规程--7751b429/GBT 37898-2019 风力发电机组 吊装安全技术规程.pdf",
+    "workspace/资料库/GBT 50107-2010 混凝土强度检验评定标准--a9d4949c/GBT 50107-2010 混凝土强度检验评定标准.pdf",
+    "workspace/资料库/GBT 50312-2016 综合布线系统工程验收规范--d6b7922d/GBT 50312-2016 综合布线系统工程验收规范.pdf",
+    "workspace/资料库/GBT 50784-2013 混凝土结构现场检测技术标准--81613e3e/GBT 50784-2013 混凝土结构现场检测技术标准.pdf",
+    "workspace/资料库/GBT 50905-2014 建筑工程绿色施工规范--f29eb886/GBT 50905-2014 建筑工程绿色施工规范.pdf",
+    "workspace/资料库/GBT 51121-2015 风力发电工程施工与验收规范--e02309cd/GBT 51121-2015 风力发电工程施工与验收规范.pdf",
+    "workspace/资料库/JGJ 106-2014 建筑基桩检测技术规范--e4830f85/JGJ 106-2014 建筑基桩检测技术规范.pdf",
+    "workspace/资料库/JGJ 107-2016 钢筋机械连接技术规程--8cb0b1e0/JGJ 107-2016 钢筋机械连接技术规程.pdf",
+    "workspace/资料库/JGJ 18-2012 钢筋焊接及验收规程--efa35152/JGJ 18-2012 钢筋焊接及验收规程.pdf",
+    "workspace/资料库/JGJ 340-2015 建筑地基检测技术规范--a5654f13/JGJ 340-2015 建筑地基检测技术规范.pdf",
+    "workspace/资料库/JGJ 79-2012 建筑地基处理技术规范--1e6e3c76/JGJ 79-2012 建筑地基处理技术规范.pdf",
+    "workspace/资料库/JGJ 8-2016 建筑变形测量规范--60b0ca44/JGJ 8-2016 建筑变形测量规范.pdf",
+    "workspace/资料库/JGJ 94-2008 建筑桩基技术规范--e6c33553/JGJ 94-2008 建筑桩基技术规范.pdf",
+    "workspace/资料库/NBT 10087-2018 陆上风电场工程施工安装技术规程--236a1eaa/NBT 10087-2018 陆上风电场工程施工安装技术规程.pdf",
+    "workspace/资料库/NBT 10684-2021 风电场工程质量管理规程--1a6f1bc0/NBT 10684-2021 风电场工程质量管理规程.pdf",
+    "workspace/资料库/NBT 10906-2021 陆上风电场工程风电机组基础施工规范--07f20fe7/NBT 10906-2021 陆上风电场工程风电机组基础施工规范.pdf",
+    "workspace/资料库/NBT 11372-2023 风电场工程施工质量检验与评定规程--c755c253/NBT 11372-2023 风电场工程施工质量检验与评定规程.pdf",
+    "workspace/资料库/NBT 31022-2012 风力发电工程达标投产验收规程--ed5150b4/NBT 31022-2012 风力发电工程达标投产验收规程.pdf",
+    "workspace/资料库/NBT 31084-2016 风力发电工程建设施工监理规范--c38170b6/NBT 31084-2016 风力发电工程建设施工监理规范.pdf",
+    "engines/models/models/Layout/PP-DocLayoutV2/config.json",
+    "engines/models/models/Layout/PP-DocLayoutV2/preprocessor_config.json",
+    "engines/models/models/OCR/paddleocr_torch/ch_PP-OCRv6_small_det_infer.safetensors",
+    "engines/models/models/OCR/paddleocr_torch/ch_PP-OCRv6_small_rec_infer.safetensors",
+    "engines/models/models/OCR/paddleocr_torch/seal_PP-OCRv4_det_infer.pth",
+    "engines/models/models/TabCls/paddle_table_cls/PP-LCNet_x1_0_table_cls.onnx",
+    "engines/models/models/TabRec/SlanetPlus/slanet-plus.onnx",
+    "engines/models/models/TabRec/UnetStructure/unet.onnx",
+    "engines/python/Lib/site-packages/fast_langdetect/ft_detect/resources/lid.176.ftz"
+  ]
 }

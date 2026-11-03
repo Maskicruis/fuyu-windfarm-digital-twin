@@ -22,6 +22,7 @@ const MAX_UPLOAD_BYTES = 300 * 1024 * 1024;
 const MAX_JSON_BYTES = 2 * 1024 * 1024;
 const MIMES = {
   '.mjs': 'text/javascript; charset=utf-8',
+  '.wasm': 'application/wasm',
   '.js': 'text/javascript; charset=utf-8',
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
@@ -92,8 +93,17 @@ function getEmbeddedAsset(key) {
 function sendStaticAsset(request, response, key, fallbackFile, contentType) {
   const embedded = getEmbeddedAsset(key);
   if (embedded) return sendBuffer(response, embedded, contentType);
+  if (readerAssets.has(fallbackFile)) {
+    const buffer=readerAssets.get(fallbackFile),range=request.headers.range;
+    if(range){const match=/^bytes=(\d+)-(\d*)$/.exec(range);if(!match)throw new HttpError(416,'Range 格式无效','INVALID_RANGE');const start=Number(match[1]),end=match[2]?Math.min(Number(match[2]),buffer.length-1):buffer.length-1;if(start>end||start>=buffer.length)throw new HttpError(416,'Range 超出文件范围','INVALID_RANGE');response.writeHead(206,{'Content-Type':contentType,'Content-Length':end-start+1,'Content-Range':`bytes ${start}-${end}/${buffer.length}`,'Accept-Ranges':'bytes','Cache-Control':'no-store'});return response.end(buffer.subarray(start,end+1));}
+    return sendBuffer(response, buffer, contentType);
+  }
   return sendFile(request, response, fallbackFile, contentType);
 }
+
+// PDF.js loads its worker later, often long after opening the desktop window.
+// Keep the matching modules available even if an external cleaner removes TEMP.
+const readerAssets=new Map();
 
 function success(response, data, status = 200) {
   sendJson(response, status, { ok: true, apiVersion: API_VERSION, data });
@@ -184,6 +194,7 @@ function decodeFileName(value) {
 
 function createHttpServer({ service = new KnowledgeBaseService() } = {}) {
   const uiFile = path.join(ROOT, 'ui.html');
+  for(const name of ['pdf.min.mjs','pdf.worker.min.mjs']){const file=path.join(ROOT,'lib',name);if(fs.existsSync(file))readerAssets.set(file,fs.readFileSync(file));}
   const server = http.createServer(async (request, response) => {
     const url = new URL(request.url, 'http://localhost');
     const pathname = url.pathname;
@@ -202,7 +213,7 @@ function createHttpServer({ service = new KnowledgeBaseService() } = {}) {
       }
       if (pathname.startsWith('/lib/')) {
         const filename = path.basename(pathname);
-        const sub=pathname.startsWith('/lib/cmaps/')?'cmaps':pathname.startsWith('/lib/standard_fonts/')?'standard_fonts':'';
+        const sub=['cmaps','standard_fonts','wasm','iccs'].find(name=>pathname.startsWith('/lib/'+name+'/'))||'';
         return sendStaticAsset(request, response, 'lib/' + (sub?sub+'/':'') + filename, path.join(ROOT, 'lib',sub,filename), MIMES[path.extname(filename).toLowerCase()] || 'application/octet-stream');
       }
       if (pathname.startsWith('/app/')) {

@@ -35,3 +35,4 @@ venv/
 /specflow-component/data/
 /specflow-component/workspace/
 /specflow-component/desktop-profile/
+/specflow-component/runtime-integrity.json

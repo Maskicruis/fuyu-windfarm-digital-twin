@@ -13,7 +13,7 @@ fs.mkdirSync(data,{recursive:true});
 process.env.KB_ROOT=path.resolve(__dirname,'..');process.env.KB_DATA_DIR=data;
 process.env.KB_BUNDLE_ROOT=portable;
 app.setPath('userData',path.join(path.dirname(data),headless?'desktop-profile-service':'desktop-profile-ui'));
-let window=null,backend=null,serviceUrl='',opening=null,shuttingDown=false;
+let window=null,backend=null,serviceUrl='',opening=null,shuttingDown=false,updater=null;
 const ownerLock=new DataLock(data);process.on('exit',()=>ownerLock.release());
 async function openWindow(){
  if(opening)return opening;
@@ -52,10 +52,20 @@ else{
   if(!Number.isInteger(requested)||requested<0||requested>65535)throw Error('端口无效');
   await new Promise((resolve,reject)=>{const listen=port=>{backend.server.once('error',error=>{if(error.code==='EADDRINUSE'&&port!==0)listen(0);else reject(error);});backend.server.listen(port,'127.0.0.1',resolve);};listen(requested);});
   port=backend.server.address().port;url=serviceUrl='http://127.0.0.1:'+port+'/';ownerLock.publish(url);
-  fs.writeFileSync(path.join(data,'component-service.json'),JSON.stringify({pid:process.pid,port,version:app.getVersion(),upstream:'SpecFlow 0.11.1',data},null,2));
+  fs.writeFileSync(path.join(data,'component-service.json'),JSON.stringify({pid:process.pid,port,version:app.getVersion(),upstream:'SpecFlow 0.11.1',data,runtimeRoot:process.env.KB_RUNTIME_ROOT||process.env.KB_ROOT},null,2));
   if(loading){if(showWhenReady)await openWindow();loading.close();}
   }else{if(headless){app.quit();return;}url=serviceUrl=await ownerLock.url();port=Number(new URL(url).port);requested=port;}
   ipcMain.handle('desktop:info',()=>({name:'SpecFlow 知识组件',version:app.getVersion(),platform:process.platform,dataDir:data,url,port,configuredPort:requested,fallback:requested>0&&requested!==port}));
+  const {ComponentUpdater}=require('./component-updater.cjs');
+  updater=new ComponentUpdater({current:app.getVersion(),root:portable,fetch:(url,options)=>net.fetch(url,options),apply:ownsData&&app.isPackaged?async({file,item})=>{
+   const directory=path.join(portable,'workspace/data/updates');fs.mkdirSync(directory,{recursive:true});
+   const worker=path.join(directory,'apply-component-update.ps1'),plan=path.join(directory,'install-plan.json');
+   fs.copyFileSync(path.join(__dirname,'apply-component-update.ps1'),worker);
+   fs.writeFileSync(plan,JSON.stringify({root:portable,file,name:item.name,version:item.version,sha256:item.sha256,pid:process.pid,previous:process.env.PORTABLE_EXECUTABLE_FILE||'',shortcuts:[path.join(portable,'打开知识组件.lnk'),path.join(path.dirname(portable),'打开独立知识组件.lnk')]}));
+   const helper=require('node:child_process').spawn('powershell.exe',['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',worker,'-Plan',plan],{detached:true,windowsHide:true,stdio:'ignore'});
+   await new Promise((resolve,reject)=>{helper.once('spawn',resolve);helper.once('error',reject);});helper.unref();setTimeout(()=>app.quit(),250);
+  }:null});
+  for(const [name,action] of [['status',()=>updater.status()],['check',()=>updater.check()],['download',()=>updater.download()],['install',()=>updater.install()]])ipcMain.handle('component-update:'+name,(event)=>{if(window&&event.sender.id!==window.webContents.id)throw Error('更新请求来源无效');return action();});
   ipcMain.handle('desktop:open-data',()=>shell.openPath(data));
   ipcMain.handle('dialog:choose-directory',async()=>{const result=await dialog.showOpenDialog(window,{properties:['openDirectory','createDirectory']});return result.canceled?'':result.filePaths[0];});
   ipcMain.handle('dialog:choose-mineru',async()=>{const result=await dialog.showOpenDialog(window,{title:'选择 MinerU 可执行文件',properties:['openFile'],filters:[{name:'可执行文件',extensions:['exe','cmd','bat']}]});return result.canceled?'':result.filePaths[0];});

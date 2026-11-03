@@ -1,75 +1,64 @@
-# SpecFlow 知识组件 1.3.2 · 规范与离线解析完整版
+# SpecFlow 知识组件 1.3.3 · 完整离线数据库与独立更新
 
-独立运行的文件存储、PDF 解析、规范检索、连续问答与原文阅读组件。基于 SpecFlow 0.11.1 裁剪，并针对批量规范处理作适配；保留 SpecFlow 图标、流式客户端、会话渲染及引用数据契约。
+独立运行的文件存储、PDF 解析、规范检索、连续问答和原文阅读组件。基于 SpecFlow 0.11.1 裁剪，保留其图标、流式客户端、会话与引用契约。
 
-[下载 EXE、资源与快速入门](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/component-v1.3.2) · [接入接口](integration/README.md)
+[完整下载](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/component-v1.3.3) · [接入接口](integration/README.md) · [预置规范目录](presets/施工验收规范目录.csv)
 
-完整版预置「施工验收规范」71 份 PDF 原件、已解析内容与持久化索引，以及独立 CPython 3.12.7、MinerU 3.4.5、CPU PyTorch、中文 OCR、版面和表格模型。无需另装 Python、MinerU 或下载默认解析模型。
+## 下载与启动
 
-## 完整下载与默认数据库
+Windows x64，建议预留至少 12 GB 磁盘空间。完整交付包含以下 6 个文件；全部从同一 Release 下载，放在同一可写文件夹后双击 EXE，自动校验并安装，无需另装 Python、MinerU、OCR 或默认模型。
 
-本版 Release 直接提供 EXE、解析引擎和默认数据库，资源不再放在旧版发布页。下载下面全部 5 个文件，放在同一文件夹，双击 EXE；程序自动校验、解压并登记资料，无需安装 Python、MinerU 或另外下载默认模型。也无需再手动导入这些规范。
-
-| 文件 | 内容 |
+| 文件 | 用途 |
 | --- | --- |
-| [SpecFlow-Knowledge-Component-1.3.2-x64.exe](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/component-v1.3.2/SpecFlow-Knowledge-Component-1.3.2-x64.exe) | 独立桌面程序 |
-| [SpecFlow-1.3.2-Parsing-Engine-Windows-x64.zip](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/component-v1.3.2/SpecFlow-1.3.2-Parsing-Engine-Windows-x64.zip) | 解析引擎、CPython、CPU PyTorch、中文 OCR、版面、表格模型与运行库 |
-| [SpecFlow-1.3.2-Default-Database-01.zip](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/component-v1.3.2/SpecFlow-1.3.2-Default-Database-01.zip) | 默认数据库第 1 包 |
-| [SpecFlow-1.3.2-Default-Database-02.zip](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/component-v1.3.2/SpecFlow-1.3.2-Default-Database-02.zip) | 默认数据库第 2 包 |
-| [SpecFlow-1.3.2-Default-Database-03.zip](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/component-v1.3.2/SpecFlow-1.3.2-Default-Database-03.zip) | 默认数据库第 3 包 |
+| `SpecFlow-Knowledge-Component-1.3.3-x64.exe` | 独立桌面程序 |
+| `SpecFlow-1.3.2-Parsing-Engine-Windows-x64.zip` | 沿用已验证的 CPython、MinerU、CPU PyTorch 和 9 个本地模型 |
+| `SpecFlow-1.3.2-Default-Database-01.zip` | 基础规范库第 1 包 |
+| `SpecFlow-1.3.2-Default-Database-02.zip` | 基础规范库第 2 包 |
+| `SpecFlow-1.3.2-Default-Database-03.zip` | 基础规范库第 3 包 |
+| `SpecFlow-1.3.3-Preindexed-Database-Update.zip` | 补齐全部 71 份规范的预解析结果 |
 
-只下载 EXE 时，联网启动会自动获取同一发布页的上述资源包；下载全部 5 个文件后，可完全离线完成安装。建议至少留出 12 GB 空间用于资源包、解压后的程序和资料。首次安装显示当前包及文件进度。
+本页提供全部资源。基础包保留原文件名与 SHA256，避免重复生成和下载；安装后的 1.3.3 默认库为 **71 份 PDF 原件，71 份均预解析**。只下载 EXE 时可联网自动获取资源，全部下载后可完全离线安装。已有完整库和引擎时自动沿用；已有基础资源但缺少新的预解析结果时仅补充相应小包。
 
-默认数据库包含用户提供的 **71 份施工验收规范 PDF 原件**，默认分组为「施工验收规范」。[在 GitHub 查看全部规范目录](presets/施工验收规范目录.csv)。资源快照中 **66 份已预解析并带 SQLite 检索索引**，可直接检索；其余 5 份原件同样随包、可阅读，首次运行继续后台 OCR，完成后自动加入检索。不会将尚未解析的文件计入已读证据。
+## 主管演示步骤
 
-新增材料：打开「文档数据库 → 导入文档」，上传 PDF，或用「导入规范文件夹」批量追加。可以新建分组；不会替换默认规范库。个人新增资料、API 密钥和会话仅保存在本机，不会上传 GitHub。升级时保留已有资料及修正内容。
+1. 进入「文档数据库 → 施工验收规范」，确认默认 71 份资料；可直接检索和阅读。
+2. 在「设置 → 模型接口」保存自己的 API 地址、密钥与服务商支持的模型名称。修改地址或模型时，密钥留空会保留原值；清除密钥有单独按钮。
+3. 选择「严格规范」，提问：**请综合数据库中的相关规范，分别说明不同适用对象的混凝土养护要求，并列出原文依据。**
+4. 点击引用跳转对应原件页，核对条文与高亮。继续追问：**这些要求分别适用于哪些工程或环境条件？**
+5. 进入「导入文档」追加自己的 PDF，或「导入规范文件夹」批量追加，可单独建立文件分组。默认库与个人材料共同参与全库检索，不会互相替换。
 
-## 开始问答
+## 完整 PDF 阅读
 
-1. 双击 EXE，等待首次资源安装；打开「文档数据库」可查看预置的 71 份规范。
-2. 在「设置 → 模型接口」填写接口地址、模型名和密钥并保存。修改地址或模型时，密钥留空会保留原值；清除需使用单独按钮。
-3. 选择回答模式并提问。严格规范模式只使用实际检索到的文件证据；引用可跳转 PDF 原文页并高亮。PDF 页码可能不同于书籍印刷页码。
+PDF.js 6.3.289、匹配的 Worker、中文 CMap、标准字体、JPEG2000/JBIG2 图像解码和 ICC 支持文件全部随程序提供，不依赖 CDN。打开文档先完整读取该 PDF，再渲染目标页与引用高亮；显示读取字节进度。完整原件保存到磁盘；无需把整个规范库同时放入内存。PDF 文件页码可能不同于印刷页码。
 
-| 回答模式 | 有相关资料 | 没有相关资料 |
-| --- | --- | --- |
-| 通用模型 | 不检索资料库，使用对话历史 | 使用通用模型 |
-| 严格规范 | 仅按检索片段回答并附引用 | 说明依据不足 |
-| 智能回答 | 按相关资料回答，明确未覆盖内容 | 切换通用回答并标明来源分支 |
+运行模块在首次启动时复制到 `%LOCALAPPDATA%/SpecFlowKnowledgeComponent/runtime`，每次启动校验、补齐损坏文件。PDF 和后台任务模块不再依赖可能被清理的临时解压目录。
 
-## 解析状态与自动恢复
+## 独立组件更新
 
-界面显示已完成页数、当前步骤、用时、输出活跃状态和已保存检查点。连续 5 分钟无输出，或 15 分钟没有完成新页面，会终止本次引擎并在队尾自动恢复一次；再次失败会保留原因，继续处理其他文件。每 8 页保存检查点，重启后按原件 SHA256 与解析选项匹配，从已保存页面之后继续。关闭程序会停止当前解析，下次启动继续；已完成文件可随时检索。
+打开「设置 → 组件更新」：检查更新 → 下载更新 → SHA256 校验 → 安装并重启。仅选择 `component-v...` 的知识组件版本，不采用数字孪生主程序的发布版本。更新保留现有 API 设置、对话、资料、索引和解析引擎。1.3.2 及更早版本需先手动运行一次 1.3.3，之后可在组件内更新。
 
-1.3.2 使用同一 Release 内独立命名的引擎包和数据库包。已有完整本地资料库与引擎时沿用现有文件；数据库资源补齐缺失的预置内容，不覆盖用户修正或自建资料。
+更新服务需连接 GitHub；规范检索、原文阅读和本地解析可离线运行。在线模型问答需要自己的有效 API 和网络。程序当前未做商业代码签名；源码、SHA256 和验收结果随 Release 提供。
 
-**长扫描件补充修复（Hotfix 1）：** 如果出现 `Timed out waiting for result of task`，请从同一 Release 下载 [SpecFlow-1.3.2-Hotfix-1.zip](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/component-v1.3.2/SpecFlow-1.3.2-Hotfix-1.zip)。[安装说明](hotfixes/long-document-timeout/README-zh-CN.md)。它将 MinerU 默认整份文档等待上限从 1 小时延长至 8 小时，保留停滞检测与检查点恢复，不改变 API 设置或数据库。此修复包是发布后的独立补丁；原始 EXE 与引擎 ZIP 未被替换。当前源码构建已包含同一启动参数修复。
+## 回答模式与全库检索
 
-## 大量文件的处理方式
+| 模式 | 行为 |
+| --- | --- |
+| 通用模型 | 使用对话历史，不检索资料库 |
+| 严格规范 | 仅依据检索到的文件片段回答并附引用；依据不足时明确说明 |
+| 智能回答 | 检索到相关依据时优先按资料回答；无相关依据时标明转入通用回答 |
 
-- 文件上传流式写入本地，复制、文字提取、OCR 结果打包和索引写入在异步任务或工作线程中完成。
-- 文字提取与 OCR 各一条队列，避免大扫描件挡住文字 PDF。退出后保留任务记录，下次启动继续排队；中断文件可能重新解析。
-- SQLite FTS5 持久化倒排索引，重启复用，只更新新增或变更的文档。每轮从每份已索引文件召回候选，采用跨文档轮询分配证据，避免一本长规范挤掉其他文件；连续编号条文可连带后续子项。每轮无需重新解析全部 PDF。
-- 资料回答按主题综合不同规范，区分适用对象；存在差异时分别引用，不自行拼接数值或认定某规范优先。相关性筛选后提供有限证据上下文，并非把整库原文全部传给模型。
-- 每轮显示全库总量、实际检索文件数、相关文件及证据来源数、待解析数量。引用来源少，不表示只搜索了这些文件；无关资料不会强行作为依据。
-- PDF 阅读按 HTTP Range 分段加载；文字面板只读取目标页附近内容，避免先下载整份大 PDF。
-- 左下角显示已索引/全部文件数量、后台任务数；每份文件保留状态与失败原因。检索耗时与模型首字耗时单独显示，模型和网络耗时不属于本地索引耗时。
+SQLite FTS5 持久化倒排索引，每轮从全部已入库资料召回候选并跨文档分配证据，不会为每次问答重做解析。回答展示实际检索范围、相关文件和引用；相关性筛选后提供有限证据上下文，不将整库原文一次性塞给模型。模型和网络耗时与本地检索耗时分别显示。
 
-开发阶段已用 71 份、约 2.22 GB PDF 验证批量导入和后台队列。1.2.0 在 49 份已建立索引规范上，对混凝土养护多主题问题执行三轮全库协同检索，耗时 1695 / 707 / 778 ms；32 个证据片段覆盖 27 份相关文件，真实 DeepSeek 回答对不同适用对象分别引用。该样本不是任意文件规模或查询下的性能保证，模型生成与网络耗时另计。其余 22 份扫描资料当时仍在 OCR，未被宣称已读；解析完成后自动加入检索。
+## 解析、恢复与本机数据
 
-## 数据、OCR 与适用边界
+内置引擎为 CPython 3.12.7、MinerU 3.4.5、CPU PyTorch、中文 OCR、版面与表格模型。文字 PDF 优先快速提取，扫描件异步进入 OCR；支持以原件 SHA256 为依据的每 8 页检查点。长文档默认整份结果等待上限为 8 小时，仍保留连续 5 分钟无输出、15 分钟无新页面的停滞检测，终止异常进程后至多自动恢复一次，避免队列一直堵塞。
 
-记录、配置与会话采用临时文件写入后原子替换保存；数据目录设占用保护。便携包每次启动使用独立临时目录，避免另一个进程退出时清理当前进程的资源。
+当前导入格式为 PDF。高级公式和 VLM 可通过外部解析接口扩展，未打包其大型模型。阅读、引用与数字仍应结合原件核对；不会自动判定规范现行有效性。
 
-数据默认位于 EXE 同目录 `workspace/data` 和 `workspace/资料库`，API 设置、文档、索引与会话重启后沿用。预置原件和解析内容也安装到资料库；资源包不会覆盖用户的 API 设置或聊天历史。组件默认绑定 127.0.0.1，不依赖数字孪生 EXE。后台启动参数与外部接入见 integration/README.md。
+用户资料、配置与会话保存在 EXE 同目录 `workspace`，升级前可备份整个目录。发行包不含 API 密钥、私人会话或个人新增材料。默认绑定 127.0.0.1；可作为外部数字孪生的独立组件接入，见 integration/README.md。
 
-文字 PDF 直接使用随 EXE 的 PDF.js。默认扫描解析使用随资源包的 MinerU pipeline CPU 引擎，中文 OCR、版面和表格模型均从本地加载，无需依赖开发电脑的 Python、用户缓存或盘符。高级公式与 VLM 是外部引擎扩展，不包含其大型模型；使用这些模式需在设置中指定相应引擎。文字层提取优先保证快速查找与原文坐标，复杂表格或字符异常应在原 PDF 核对，并可切换 OCR 重解析。少量可复制水印不等于完整文字层，稀疏文字 PDF 会转入 OCR。
+项目源码为 MIT；规范原件、第三方引擎和模型保留各自出版及许可权利，见 NOTICE.md、引擎 third-party-notices 和 Python 包许可证。
 
-当前支持导入 PDF；其他格式需先转换 PDF。检索相关性判定和引用编号检查用于减少无依据回答，不能证明每句话语义正确，也不会自动确认规范现行有效性。可点击原文核查适用范围与数值。
+## 开发与验证
 
-API 密钥沿用 SpecFlow 的本地设置存储方式，不写入公开交付。发布资源只包含筛选后的预置规范、解析内容、索引与引擎，不包含用户 API 密钥、会话或设置文件。用户数据位于 `workspace`，不要将该目录上传 GitHub。项目源码为 MIT；规范原件及第三方引擎、模型保留各自许可，见 NOTICE.md、随包 `engines/third-party-notices` 和各 Python 包的许可证。
-
-## 开发
-
-Node.js 24；`npm ci --prefix specflow-component`，`npm test --prefix specflow-component`，`npm run build --prefix specflow-component`。Windows x64 portable 包包含 Electron/Node 和 PDF.js；原 SpecFlow 的非知识库业务已移除。
-
-资源构建脚本为 `scripts/build-specflow-resources.py`，输入已安装的固定版本引擎、模型和规范库，生成不含私密设置的资源分包及校验清单。`--direct` 直接从原件和引擎源目录生成分包，建议输出到本地 SSD，避免在 U 盘内重复拷贝大文件；`--archives-only` 可从已准备目录重新生成分包。将生成的 `resources-manifest.json` 复制到组件工程后再构建 EXE；分包与源码、EXE 一起发布到同一版本的 Release。开发验收可用 `--no-bundle` 跳过预置资源安装，正常用户启动无需此参数。
+Node.js 24；`npm ci --prefix specflow-component`、`npm test --prefix specflow-component`、`npm run build --prefix specflow-component`。构建后按实际打包文件生成运行完整性清单。`scripts/prepare-pdf-reader-assets.py` 校验精确版本的上游分发包并补齐阅读支持文件；`scripts/build-specflow-preindexed-update.py` 从既有发行库生成不含密钥或聊天记录的预解析补充包。

@@ -11,5 +11,6 @@ test('removed business routes are absent from component code and desktop bridge'
  const server=fs.readFileSync(path.join(root,'src/http-server.js'),'utf8'),service=fs.readFileSync(path.join(root,'src/service.js'),'utf8'),preload=fs.readFileSync(path.join(root,'desktop/preload.cjs'),'utf8');
  for(const word of ['ProjectWorkspace','SpecificationMonitor','WordFormatService'])assert.ok(!service.includes(word),word);
  for(const route of ['/api/v1/projects','/api/v1/spec-monitors','/api/tools'])assert.ok(!server.includes(route),route);
- for(const feature of ['designTools:','connector:','updates:','balance:'])assert.ok(!preload.includes(feature),feature);
+ for(const feature of ['designTools:','connector:','balance:'])assert.ok(!preload.includes(feature),feature);
+ assert.ok(preload.includes('component-update:check'));
 });

@@ -22,7 +22,9 @@ function adoptExistingBundle(root,manifest){
 async function installBundle(root,onProgress=()=>{},fetcher=globalThis.fetch){
  const manifest=bundleManifest(root);if(!manifest||isBundleReady(root))return;
  if(adoptExistingBundle(root,manifest)){onProgress('沿用本机完整资料库与解析引擎');return;}
- for(const part of manifest.parts){
+ const baseReady=!!readJson(path.join(root,'resources-installed.json'))&&Array.isArray(manifest.baseRequired)&&manifest.baseRequired.length>0&&manifest.baseRequired.every(p=>fs.existsSync(path.join(root,p)));
+ const parts=baseReady?manifest.parts.filter(part=>!part.base):manifest.parts;
+ for(const part of parts){
   if(path.basename(part.name)!==part.name)throw Error('资源包名称无效');
   const archive=path.join(root,part.name);
   if(!fs.existsSync(archive)){
@@ -39,8 +41,8 @@ async function installBundle(root,onProgress=()=>{},fetcher=globalThis.fetch){
   onProgress('正在校验 '+part.name);if(await digest(archive)!==part.sha256)throw Error('资源包校验失败：'+part.name);
  }
  writeJson(path.join(root,'resources-installing.json'),{version:manifest.version,startedAt:new Date().toISOString()});
- for(const [i,part] of manifest.parts.entries()){
-  onProgress('正在安装 '+(part.title||part.name)+' · '+(i+1)+' / '+manifest.parts.length);
+ for(const [i,part] of parts.entries()){
+  onProgress('正在安装 '+(part.title||part.name)+' · '+(i+1)+' / '+parts.length);
   await new Promise((resolve,reject)=>{
    // Paths are passed through environment variables, never interpolated as code.
    const child=spawn('powershell.exe',['-NoProfile','-NonInteractive','-File',path.join(__dirname,'extract-resources.ps1')],{windowsHide:true,env:{...process.env,SF_ARCHIVE:path.join(root,part.name),SF_DEST:root,SF_PRESERVE:part.role==='database'?'1':'0'}});

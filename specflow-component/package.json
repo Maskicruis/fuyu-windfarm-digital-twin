@@ -1,16 +1,16 @@
 {
   "name": "specflow-knowledge-component",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "description": "SpecFlow-derived standalone file parsing, knowledge and language model component",
   "author": "Maskicruis",
   "license": "MIT",
   "private": true,
-  "main": "desktop/main.cjs",
+  "main": "desktop/bootstrap.cjs",
   "type": "commonjs",
   "scripts": {
     "start": "electron .",
     "test": "node --test test/*.test.js",
-    "build": "electron-builder --win portable"
+    "build": "node scripts/runtime-manifest.cjs && electron-builder --win portable"
   },
   "dependencies": {
     "https-proxy-agent": "7.0.6"
@@ -24,6 +24,7 @@
     "productName": "SpecFlow 知识组件",
     "asar": false,
     "npmRebuild": false,
+    "afterPack": "scripts/after-pack.cjs",
     "directories": {
       "output": "release"
     },
@@ -44,7 +45,8 @@
       "integration/**",
       "engines/**",
       "presets/**",
-      "resources-manifest.json"
+      "resources-manifest.json",
+      "runtime-integrity.json"
     ],
     "win": {
       "icon": "build/app.ico",
