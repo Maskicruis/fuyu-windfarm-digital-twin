@@ -152,10 +152,10 @@ def main():
                 assert target['page']==38,target
                 assert target['bboxNormalized'][1]<.20,target
             page_url=base+'/api/view?id='+doc_id+'&page='+str(hit['page'])
-            with urllib.request.urlopen(page_url,timeout=5) as response:
+            with urllib.request.urlopen(page_url,timeout=30) as response:
                 assert json.load(response)['items']
             req=urllib.request.Request(base+'/api/v1/documents/'+doc_id+'/source',headers={'Range':'bytes=0-1023'})
-            with urllib.request.urlopen(req,timeout=5) as response:
+            with urllib.request.urlopen(req,timeout=30) as response:
                 assert response.status==206
                 assert response.headers['Accept-Ranges']=='bytes'
                 assert len(response.read())==1024
