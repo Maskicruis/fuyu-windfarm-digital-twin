@@ -19,5 +19,10 @@ os.environ.setdefault('MINERU_PROCESSING_WINDOW_SIZE','8')
 if __name__=='__main__':
  from multiprocessing import freeze_support
  freeze_support()
+ # Fail before expensive OCR if the bundled language model cannot be loaded.
+ # The patched vendor loader also runs inside MinerU's separate API process.
+ from fast_langdetect.ft_detect.infer import load_model
+ load_model(low_memory=True, use_strict_mode=True)
+ print('SpecFlow offline language-model preflight: OK', flush=True)
  from mineru.cli.client import main
  main()

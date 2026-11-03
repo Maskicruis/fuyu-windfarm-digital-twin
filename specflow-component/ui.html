@@ -178,6 +178,9 @@ button{color:inherit}
 .muted{color:var(--text-3);font-size:11px}
 .bar{width:76px;height:5px;background:var(--surface-3);border-radius:6px;overflow:hidden;display:inline-block;vertical-align:middle;margin:0 4px}
 .bar>div{height:100%;background:linear-gradient(90deg,var(--accent),#8c7cf0)}
+.bar.indeterminate>div{animation:parse-pulse 1.4s ease-in-out infinite}
+@keyframes parse-pulse{0%{transform:translateX(-100%)}100%{transform:translateX(250%)}}
+@media(prefers-reduced-motion:reduce){.bar.indeterminate>div{animation:none}}
 .logline{font:10px Consolas,'Microsoft YaHei',monospace;color:var(--text-3);margin-top:4px;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 input,select{min-height:34px;background:var(--surface-2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:6px 9px;font-size:11px;outline:none}
 input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
@@ -701,7 +704,7 @@ function render(){
   if(!docs.length){ el.innerHTML='<tr><td colspan="5" class="empty-state">'+(keyword?'当前分组没有匹配的文档。':'当前分组暂无文档。可在文档的分组菜单中归类，或直接导入。')+'</td></tr>'; return; }
   el.innerHTML=docs.map(function(d){
     var status=zh(d.status);
-    if(d.status==='parsing'){ status+=' <span class="bar"><div style="width:'+(d.progress||0)+'%"></div></span> '+(d.progress||0)+'%';
+    if(d.status==='parsing'){ var indeterminate=d.progressMode==='indeterminate'||d.parseStage==='ocr'; status+=' <span class="bar'+(indeterminate?' indeterminate':'')+'"><div style="width:'+(indeterminate?40:Math.min(99,d.progress||0))+'%"></div></span> '+(indeterminate?esc(d.progressText||'OCR 处理中…'):Math.min(99,d.progress||0)+'%');
       var lines=String(d.logTail||'').split(/\r|\n/).filter(Boolean); var last=lines.length?lines[lines.length-1]:'';
       if(last) status+='<div class="logline">'+esc(last.replace(/\x1b\[[0-9;]*m/g,''))+'</div>';
     }

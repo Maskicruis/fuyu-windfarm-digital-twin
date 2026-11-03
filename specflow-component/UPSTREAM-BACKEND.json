@@ -57,9 +57,9 @@
     },
     {
       "path": "src/mineru-adapter.js",
-      "sha256": "bbe102f44367566892d2dacbaf8a3ce9777b4f208e89e85905ee6cc4b79c6608",
+      "sha256": "446aead60358e1333d4ec91c737e4c46e0df30b474a1717ba39e7951ac3a9b37",
       "upstream_sha256": "2dd0ea3aabb41c7d0fe43a9495c41bac71ec7f505f4338d7a2b16a089b5793a8",
-      "reason": "1.1.0: native text pass, persistent FTS, strict answering policy and background service lifecycle adaptation"
+      "reason": "1.3.0: bundled offline entry, Windows Unicode model compatibility and indeterminate OCR sub-step progress"
     },
     {
       "path": "src/llm.js",

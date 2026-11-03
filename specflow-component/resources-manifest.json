@@ -52,8 +52,14 @@
     {
       "name": "SpecFlow-1.3.0-Resources-Native.zip",
       "bytes": 757457,
-      "sha256": "de3882703fae432aa1a93a91097106f3556b088fd2737ae09e184bf3ae5b3f74",
+      "sha256": "00dda947a3c55d8ba0a629b71786becece133e8e1a9275287e63c5f0c50039bb",
       "url": "https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/component-v1.3.0/SpecFlow-1.3.0-Resources-Native.zip"
+    },
+    {
+      "name": "SpecFlow-1.3.0-Resources-Compatibility.zip",
+      "bytes": 4610,
+      "sha256": "5319d0600e37eb778ac42d5f3be8388aaef803ed2467c472eb86a01281a7b764",
+      "url": "https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/component-v1.3.0/SpecFlow-1.3.0-Resources-Compatibility.zip"
     }
   ],
   "required": [
@@ -62,6 +68,8 @@
     "engines/run_mineru.py",
     "engines/models/models/Layout/PP-DocLayoutV2/model.safetensors",
     "database/manifest.json",
-    "engines/python/vcruntime140_threads.dll"
-  ]
+    "engines/python/vcruntime140_threads.dll",
+    "engines/compatibility-1.3.0.json"
+  ],
+  "revision": 1
 }

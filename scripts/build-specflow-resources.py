@@ -1,10 +1,21 @@
 """Build portable offline runtime and sanitized preset database. No credentials/history."""
 from pathlib import Path
-import argparse,hashlib,json,os,shutil,sqlite3,urllib.request,zipfile,importlib.metadata,subprocess
+import argparse,hashlib,json,os,shutil,sqlite3,urllib.request,zipfile,importlib.metadata,subprocess,runpy
 from concurrent.futures import ThreadPoolExecutor
 
 def write_json(p,value):
  p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes((json.dumps(value,ensure_ascii=False,indent=2)+'\n').encode())
+
+def compatibility_part(release,engine):
+ engine_source=Path(__file__).resolve().parent.parent/'specflow-component/engines'
+ patched=runpy.run_path(str(engine_source/'apply_patches.py'))['patch_engine'](engine)
+ shutil.copy2(engine_source/'run_mineru.py',engine/'run_mineru.py')
+ marker=engine/'compatibility-1.3.0.json'
+ write_json(marker,{'version':'1.3.0','revision':1,'patch':'fast-langdetect Windows Unicode model path','source':'specflow-component/engines/apply_patches.py','patched_sha256':hashlib.sha256(patched.read_bytes()).hexdigest()})
+ file=release/'SpecFlow-1.3.0-Resources-Compatibility.zip'
+ with zipfile.ZipFile(file,'w',zipfile.ZIP_DEFLATED,compresslevel=3) as z:
+  for p in [patched,engine/'run_mineru.py',marker]:z.write(p,'engines/'+p.relative_to(engine).as_posix())
+ return {'name':file.name,'bytes':file.stat().st_size,'sha256':hashlib.sha256(file.read_bytes()).hexdigest(),'url':'https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/component-v1.3.0/'+file.name}
 def release_file(p):
  name=p.name.lower()
  return not (name.endswith('.dll') and ('clr0400' in name or name.startswith(('vcruntime140d','vcruntime140_1d','vcruntime140_threadsd','msvcp140d','msvcp140_1d','msvcp140_2d'))))
@@ -82,9 +93,10 @@ def archives(root,release):
  required=['engines/python/python.exe','engines/run_mineru.py','engines/models/models/Layout/PP-DocLayoutV2/model.safetensors','database/manifest.json']
  native=native_runtime_part(release)
  if native:parts.append(native);required.append('engines/python/vcruntime140_threads.dll')
- manifest={'version':'1.3.0','parts':parts,'required':required};write_json(release/'resources-manifest.json',manifest);write_json(root/'resources-manifest.json',manifest)
+ parts.append(compatibility_part(release,root/'engines'));required.append('engines/compatibility-1.3.0.json')
+ manifest={'version':'1.3.0','revision':1,'parts':parts,'required':required};write_json(release/'resources-manifest.json',manifest);write_json(root/'resources-manifest.json',manifest)
  # A materialized local folder can launch immediately. Downloaded archives install automatically.
- write_json(root/'resources-installed.json',{'version':'1.3.0','prepared':True})
+ write_json(root/'resources-installed.json',{'version':'1.3.0','revision':1,'prepared':True})
  return manifest
 def direct_distribution(data,engine,venv,models,release,originals=None):
  """Stream large originals into archives without duplicating them on a USB disk."""
@@ -131,7 +143,8 @@ def direct_distribution(data,engine,venv,models,release,originals=None):
   part={'name':file.name,'bytes':file.stat().st_size,'sha256':h,'url':'https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/download/component-v1.3.0/'+file.name};parts.append(part);print(json.dumps(part),flush=True)
  native=native_runtime_part(release)
  if native:parts.append(native)
- manifest={'version':'1.3.0','parts':parts,'required':['engines/python/python.exe','engines/python/Lib/site-packages/torch/testing/__init__.py','engines/run_mineru.py','engines/python/vcruntime140_threads.dll','engines/models/models/Layout/PP-DocLayoutV2/model.safetensors','database/manifest.json']};write_json(release/'resources-manifest.json',manifest)
+ parts.append(compatibility_part(release,engine))
+ manifest={'version':'1.3.0','revision':1,'parts':parts,'required':['engines/python/python.exe','engines/python/Lib/site-packages/torch/testing/__init__.py','engines/run_mineru.py','engines/compatibility-1.3.0.json','engines/python/vcruntime140_threads.dll','engines/models/models/Layout/PP-DocLayoutV2/model.safetensors','database/manifest.json']};write_json(release/'resources-manifest.json',manifest)
  print(json.dumps({'complete':True,'documents':len(seeds),'indexed':sum(s['status']=='ready' for s in seeds),'files':len(mapping)}),flush=True)
 if __name__=='__main__':
  p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);p.add_argument('--release',type=Path,required=True);p.add_argument('--venv',type=Path);p.add_argument('--models',type=Path);p.add_argument('--data',type=Path);p.add_argument('--originals',type=Path);p.add_argument('--archives-only',action='store_true');p.add_argument('--direct',action='store_true');a=p.parse_args();a.release.mkdir(parents=True,exist_ok=True)

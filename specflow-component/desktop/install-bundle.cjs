@@ -6,9 +6,9 @@ function bundleManifest(root){
  const local=readJson(path.join(root,'resources-manifest.json')),embedded=readJson(path.join(__dirname,'../resources-manifest.json'));
  if(!local)return embedded;if(!embedded)return local;
  const version=s=>String(s).split('.').reduce((v,n)=>v*1000+Number(n||0),0);
- return version(embedded.version)>version(local.version)?embedded:local;
+ return version(embedded.version)>version(local.version)||(embedded.version===local.version&&(embedded.revision||0)>(local.revision||0))?embedded:local;
 }
-function isBundleReady(root){const manifest=bundleManifest(root),marker=readJson(path.join(root,'resources-installed.json'));return !manifest||marker?.version===manifest.version&&manifest.required.every(p=>fs.existsSync(path.join(root,p)));}
+function isBundleReady(root){const manifest=bundleManifest(root),marker=readJson(path.join(root,'resources-installed.json'));return !manifest||marker?.version===manifest.version&&(marker.revision||0)===(manifest.revision||0)&&manifest.required.every(p=>fs.existsSync(path.join(root,p)));}
 async function installBundle(root,onProgress=()=>{},fetcher=globalThis.fetch){
  const manifest=bundleManifest(root);if(!manifest||isBundleReady(root))return;
  for(const part of manifest.parts){
@@ -36,6 +36,6 @@ async function installBundle(root,onProgress=()=>{},fetcher=globalThis.fetch){
   });
  }
  for(const required of manifest.required)if(!fs.existsSync(path.join(root,required)))throw Error('资源文件不完整：'+required);
- writeJson(path.join(root,'resources-installed.json'),{version:manifest.version,installedAt:new Date().toISOString()});
+ writeJson(path.join(root,'resources-installed.json'),{version:manifest.version,revision:manifest.revision||0,installedAt:new Date().toISOString()});
 }
 module.exports={installBundle,digest,isBundleReady};

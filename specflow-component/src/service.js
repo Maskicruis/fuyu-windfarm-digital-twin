@@ -236,6 +236,8 @@ class KnowledgeBaseService {
     const document = this.get(id);
     if (!document) return;
     document.status = 'error';
+    document.progress = 0;
+    document.progressMode = 'determinate';
     document.progressText = '失败';
     document.error = String(error && error.message || error).slice(-3000);
     document.updatedAt = nowIso();
@@ -245,6 +247,9 @@ class KnowledgeBaseService {
 
   async process(document,ocr=false) {
     document.status = 'parsing';
+    document.progress = 0;
+    document.progressMode = ocr ? 'indeterminate' : 'determinate';
+    delete document.logTail;
     document.progressText = ocr?'扫描件 OCR 中…':'快速读取文字层…';
     document.error = '';
     document.updatedAt = nowIso();
@@ -274,8 +279,9 @@ class KnowledgeBaseService {
       nativeOnly:!ocr,
       corrections,
       onProgress: progress => {
-        document.progress = progress;
-        document.progressText = (ocr?'OCR ':'文字提取 ')+progress+'%';
+        document.progressMode = progress == null ? 'indeterminate' : 'determinate';
+        document.progress = progress == null ? 0 : Math.min(99, progress);
+        document.progressText = progress == null ? '扫描件 OCR 中…' : '文字提取 '+document.progress+'%';
         touch();
       },
       onLog: tail => {
@@ -284,11 +290,15 @@ class KnowledgeBaseService {
       }
     });
     if(result.needsOCR){document.status='queued';document.fastPassVersion='1.1.0';document.parseStage='ocr';document.progress=0;document.progressText='扫描件待 OCR（不阻塞文字 PDF）';this.persist();this.ocrQueue.enqueue(document.id,()=>this.process(document,true));return;}
+    document.progressText = '解析完成，正在建立检索索引…';
+    document.progressMode = 'indeterminate';
+    this.persist();
     await this.rag.refresh();
     document.parser = result.document.document.parser || 'mineru';
     document.parseNote = result.document.document.parseNote || '';
     document.status = 'ready';
     document.progress = 100;
+    document.progressMode = 'determinate';
     document.progressText = '索引就绪';
     document.updatedAt = nowIso();
     document.pages = result.stats?.pages??result.document.document.pageCount;

@@ -63,7 +63,7 @@ function withLocalProxyBypass(env = process.env) {
 
 const activeChildren=new Set();
 function stopMineru(){for(const child of activeChildren){if(process.platform==='win32'&&child.pid)spawn('taskkill',['/PID',String(child.pid),'/T','/F'],{windowsHide:true,stdio:'ignore'});else child.kill();}activeChildren.clear();}
-function runMineru({ executable, inputPath, outputDir, options, onProgress, onLog }) {
+function runMineru({ executable, inputPath, outputDir, options, onProgress, onLog, spawnProcess = spawn }) {
   const normalized = normalizeOptions(options);
   const args = buildArgs(inputPath, outputDir, normalized);
   const bundledEntry=path.join(path.dirname(executable),'..','run_mineru.py');
@@ -72,21 +72,21 @@ function runMineru({ executable, inputPath, outputDir, options, onProgress, onLo
    args.unshift(bundledEntry);
   }
   return new Promise((resolve, reject) => {
-    const child = spawn(executable, args, {
+    const child = spawnProcess(executable, args, {
       windowsHide: true,
       shell: false,
       env: Object.assign(withLocalProxyBypass(), { MINERU_MODEL_SOURCE: normalized.modelSource })
     });
     activeChildren.add(child);child.once('close',()=>activeChildren.delete(child));
     let output = '';
-    let maximum = 0;
     let lastEmission = 0;
     const consume = chunk => {
       output += chunk.toString();
       if (output.length > 200000) output = output.slice(-100000);
-      const percentages = chunk.toString().match(/(?:^|\D)(\d{1,3})%/g) || [];
-      for (const match of percentages) maximum = Math.max(maximum, Number(match.match(/\d+/)[0]));
-      if (onProgress && percentages.length) onProgress(Math.min(100, maximum));
+      // MinerU emits one tqdm percentage per window and per sub-step. A layout
+      // or OCR sub-step at 100% is not completion of the document. Report an
+      // indeterminate operation; the service marks 100 only after indexing.
+      if (onProgress) onProgress(null);
       if (onLog && Date.now() - lastEmission > 500) {
         lastEmission = Date.now();
         onLog(output.slice(-1200));
