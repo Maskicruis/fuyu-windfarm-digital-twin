@@ -1,28 +1,14 @@
 $ErrorActionPreference = 'Stop'
-Add-Type -AssemblyName System.IO.Compression.FileSystem
-$root = [IO.Path]::GetFullPath($env:SF_DEST).TrimEnd('\') + '\'
-$archive = [IO.Compression.ZipFile]::OpenRead($env:SF_ARCHIVE)
+# Windows PowerShell 5.1 otherwise writes localized errors in the OEM code page.
+[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
+[Console]::InputEncoding = New-Object System.Text.UTF8Encoding($false)
 try {
-    $current = 0
-    $total = $archive.Entries.Count
-    foreach ($entry in $archive.Entries) {
-        $entryPath = $entry.FullName.Replace('\', '/')
-        $current++
-        if ($current % 200 -eq 0 -or $current -eq 1) { [Console]::Out.WriteLine("SF_EXTRACT $current/$total") }
-        $target = [IO.Path]::GetFullPath((Join-Path $root $entryPath))
-        if (-not $target.StartsWith($root, [StringComparison]::OrdinalIgnoreCase)) { throw 'Archive entry escapes destination' }
-        if ($entryPath.EndsWith('/')) { [IO.Directory]::CreateDirectory($target) | Out-Null; continue }
-        if ($env:SF_PRESERVE -eq '1' -and $entryPath.StartsWith('workspace/', [StringComparison]::OrdinalIgnoreCase) -and [IO.File]::Exists($target)) { continue }
-        [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($target)) | Out-Null
-        $temporary = $target + '.sf-install-' + [Guid]::NewGuid().ToString('N')
-        try {
-            $inputStream = $entry.Open()
-            $outputStream = [IO.File]::Create($temporary)
-            try { $inputStream.CopyTo($outputStream) } finally { $outputStream.Dispose(); $inputStream.Dispose() }
-            if ([IO.File]::Exists($target)) { [IO.File]::Delete($target) }
-            [IO.File]::Move($temporary, $target)
-            [IO.File]::SetLastWriteTime($target, $entry.LastWriteTime.LocalDateTime)
-        } finally { if ([IO.File]::Exists($temporary)) { [IO.File]::Delete($temporary) } }
-    }
-    [Console]::Out.WriteLine("SF_EXTRACT $total/$total")
-} finally { $archive.Dispose() }
+    Add-Type -AssemblyName System.IO.Compression
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    Add-Type -Path (Join-Path $PSScriptRoot 'resource-extractor.cs') -ReferencedAssemblies System.IO.Compression,System.IO.Compression.FileSystem
+    [SpecFlow.ResourceExtractor]::Extract($env:SF_ARCHIVE, $env:SF_DEST, ($env:SF_PRESERVE -eq '1'))
+} catch {
+    $message = $_.Exception.GetBaseException().Message
+    [Console]::Error.WriteLine('SF_EXTRACT_ERROR ' + (@{message=$message} | ConvertTo-Json -Compress))
+    exit 1
+}

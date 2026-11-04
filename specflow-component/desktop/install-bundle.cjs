@@ -46,8 +46,14 @@ async function installBundle(root,onProgress=()=>{},fetcher=globalThis.fetch){
   await new Promise((resolve,reject)=>{
    // Paths are passed through environment variables, never interpolated as code.
    const child=spawn('powershell.exe',['-NoProfile','-NonInteractive','-File',path.join(__dirname,'extract-resources.ps1')],{windowsHide:true,env:{...process.env,SF_ARCHIVE:path.join(root,part.name),SF_DEST:root,SF_PRESERVE:part.role==='database'?'1':'0'}});
-   child.stdout.on('data',chunk=>{const matches=String(chunk).match(/SF_EXTRACT (\d+)\/(\d+)/g);if(matches?.length)onProgress('正在安装 '+(part.title||part.name)+' · 已处理 '+matches.at(-1).slice(11)+' 个文件');});
-   let error='';child.stderr.on('data',c=>error+=c);child.on('error',reject);child.on('close',code=>code===0?resolve():reject(Error('资源解压失败：'+error.slice(-1000))));
+   child.stdout.setEncoding('utf8');child.stderr.setEncoding('utf8');
+   child.stdout.on('data',chunk=>{const matches=chunk.match(/SF_EXTRACT (\d+)\/(\d+)/g);if(matches?.length)onProgress('正在安装 '+(part.title||part.name)+' · 已处理 '+matches.at(-1).slice(11)+' 个文件');});
+   let error='';child.stderr.on('data',c=>{error=(error+c).slice(-12000);});child.on('error',reject);child.on('close',code=>{
+    if(code===0)return resolve();
+    const structured=error.split(/\r?\n/).findLast(line=>line.startsWith('SF_EXTRACT_ERROR '));
+    let message=error.trim();try{if(structured)message=JSON.parse(structured.slice(17)).message;}catch{}
+    reject(Error('资源解压失败（'+part.name+'）：'+(message||'解压进程退出，代码 '+code)));
+   });
   });
  }
  for(const required of manifest.required)if(!fs.existsSync(path.join(root,required)))throw Error('资源文件不完整：'+required);

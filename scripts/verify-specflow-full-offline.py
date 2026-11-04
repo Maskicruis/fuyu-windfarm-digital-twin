@@ -1,4 +1,4 @@
-"""Fresh Windows deployment from EXE + four supplied ZIPs; no previous library.
+"""Fresh Windows deployment from EXE + supplied ZIPs; no previous library.
 
 The ZIPs are hard-linked on the same local NTFS volume only to avoid a second
 download-sized copy. Every installed engine/model/database file is extracted by
@@ -11,8 +11,12 @@ parser=argparse.ArgumentParser();parser.add_argument('--package-dir',type=Path,r
 area=args.output.resolve();area.mkdir(parents=True,exist_ok=True)
 assert not (area/'workspace').exists(),'Use a completely fresh output folder'
 manifest=json.loads((args.package_dir/'resources-manifest.json').read_text('utf8'))
-for part in manifest['parts']:os.link(args.package_dir/part['name'],area/part['name'])
-version=manifest['version'];exe=area/('SpecFlow-Knowledge-Component-'+version+'-x64.exe');shutil.copy2(args.package_dir/exe.name,exe)
+for part in manifest['parts']:
+ try:os.link(args.package_dir/part['name'],area/part['name'])
+ except OSError:shutil.copy2(args.package_dir/part['name'],area/part['name'])
+# Application and immutable resource bundles have independent versions.
+version=json.loads((Path(__file__).resolve().parent.parent/'specflow-component/package.json').read_text('utf8'))['version']
+exe=area/('SpecFlow-Knowledge-Component-'+version+'-x64.exe');shutil.copy2(args.package_dir/exe.name,exe)
 env={k:v for k,v in os.environ.items() if not k.startswith('KB_') and k!='PORTABLE_EXECUTABLE_DIR'}
 env.update({'HTTP_PROXY':'http://127.0.0.1:9','HTTPS_PROXY':'http://127.0.0.1:9','NO_PROXY':'127.0.0.1,localhost,::1','no_proxy':'127.0.0.1,localhost,::1','HF_HUB_OFFLINE':'1','TRANSFORMERS_OFFLINE':'1'})
 client=urllib.request.build_opener(urllib.request.ProxyHandler({}));process=None;record=area/'workspace/data/component-service.json';started=time.monotonic()
@@ -69,7 +73,7 @@ try:
  code="import sys,json,importlib.metadata;import torch,mineru,fast_langdetect,pypdfium2;print(json.dumps({'python':sys.version.split()[0],'torch':torch.__version__,'mineru':importlib.metadata.version('mineru'),'paths':sys.path}))"
  result=subprocess.run([str(area/'engines/python/python.exe'),'-c',code],capture_output=True,text=True,encoding='utf8',env=env,check=True)
  runtime=json.loads(result.stdout.strip().splitlines()[-1]);assert all(str(area/'engines/python').lower() in p.lower() for p in runtime['paths'])
- proof={'passed':True,'version':version,'empty_directory_before_start':True,'no_network_resource_download':True,'original_pdfs':71,'default_group_count':71,'preindexed_documents':manifest['presetCounts']['indexed'],'search_hits':len(hits),'search_ms':search_ms,'positioned_hits':True,'extra_import_ready':True,'documents_after_import_before_ocr_probe':72,'default_database_preserved_after_import':True,'bundled_ocr_checkpoint_pages':checkpoint,'clean_settings_and_conversations':True,'runtime':{k:v for k,v in runtime.items() if k!='paths'},'elapsed_seconds':round(time.monotonic()-started,1),'exe_sha256':hashlib.sha256(exe.read_bytes()).hexdigest()}
+ proof={'passed':True,'version':version,'resource_version':manifest['version'],'installation_path':str(area),'empty_directory_before_start':True,'no_network_resource_download':True,'original_pdfs':71,'default_group_count':71,'preindexed_documents':manifest['presetCounts']['indexed'],'search_hits':len(hits),'search_ms':search_ms,'positioned_hits':True,'extra_import_ready':True,'documents_after_import_before_ocr_probe':72,'default_database_preserved_after_import':True,'bundled_ocr_checkpoint_pages':checkpoint,'clean_settings_and_conversations':True,'runtime':{k:v for k,v in runtime.items() if k!='paths'},'elapsed_seconds':round(time.monotonic()-started,1),'exe_sha256':hashlib.sha256(exe.read_bytes()).hexdigest()}
  (area/'proof.json').write_text(json.dumps(proof,ensure_ascii=False,indent=2),encoding='utf8');print(json.dumps(proof,ensure_ascii=False),flush=True)
 finally:
  if process is not None and process.poll() is None:

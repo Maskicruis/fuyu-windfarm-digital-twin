@@ -5,7 +5,7 @@ on:
       release_id:
         type: string
         required: true
-        description: Draft component-v1.3.3 release ID
+        description: Draft component-vX.Y.Z release ID (never modifies public assets)
 permissions:
   contents: write
 concurrency:

@@ -1,6 +1,6 @@
 """Copy public, immutable 1.3.2 seed assets into the explicitly selected draft."""
 from pathlib import Path
-import argparse,hashlib,http.client,json,os,tempfile,time,urllib.request,urllib.parse
+import argparse,hashlib,http.client,json,os,re,tempfile,time,urllib.request,urllib.parse
 from concurrent.futures import ThreadPoolExecutor
 p=argparse.ArgumentParser();p.add_argument('--release-id',type=int,required=True);p.add_argument('--repository',required=True);a=p.parse_args()
 assert a.repository=='Maskicruis/fuyu-windfarm-digital-twin'
@@ -8,7 +8,7 @@ api='https://api.github.com/repos/'+a.repository;token=os.environ['GH_TOKEN']
 def call(url,method=None):
     with urllib.request.urlopen(urllib.request.Request(url,headers={'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json','User-Agent':'SpecFlow-Release-Resources'},method=method),timeout=90) as response:
         raw=response.read();return json.loads(raw) if raw else None
-release=call(api+'/releases/'+str(a.release_id));assert release['draft'] and release['tag_name']=='component-v1.3.4'
+release=call(api+'/releases/'+str(a.release_id));assert release['draft'] and re.fullmatch(r'component-v\d+\.\d+\.\d+',release['tag_name'])
 manifest=json.loads((Path(__file__).resolve().parent.parent/'specflow-component/resources-manifest.json').read_text('utf8'))
 class LargeConnection(http.client.HTTPSConnection):
     def __init__(self,*args,**kwargs):super().__init__(*args,blocksize=1024*1024,**kwargs)

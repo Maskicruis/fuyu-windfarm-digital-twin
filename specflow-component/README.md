@@ -1,8 +1,8 @@
-# SpecFlow 知识组件 1.3.4 · 完整离线数据库与独立更新
+# SpecFlow 知识组件 1.3.5 · 完整离线数据库与独立更新
 
 独立运行的文件存储、PDF 解析、规范检索、连续问答和原文阅读组件。基于 SpecFlow 0.11.1 裁剪，保留其图标、流式客户端、会话与引用契约。
 
-[完整下载](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/component-v1.3.4) · [接入接口](integration/README.md) · [预置规范目录](presets/施工验收规范目录.csv)
+[完整下载](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/component-v1.3.5) · [接入接口](integration/README.md) · [预置规范目录](presets/施工验收规范目录.csv)
 
 ## 下载与启动
 
@@ -10,7 +10,7 @@ Windows x64，建议预留至少 12 GB 磁盘空间。完整交付包含以下 6
 
 | 文件 | 用途 |
 | --- | --- |
-| `SpecFlow-Knowledge-Component-1.3.4-x64.exe` | 独立桌面程序 |
+| `SpecFlow-Knowledge-Component-1.3.5-x64.exe` | 独立桌面程序 |
 | `SpecFlow-1.3.2-Parsing-Engine-Windows-x64.zip` | 沿用已验证的 CPython、MinerU、CPU PyTorch 和 9 个本地模型 |
 | `SpecFlow-1.3.2-Default-Database-01.zip` | 基础规范库第 1 包 |
 | `SpecFlow-1.3.2-Default-Database-02.zip` | 基础规范库第 2 包 |
@@ -27,6 +27,10 @@ Windows x64，建议预留至少 12 GB 磁盘空间。完整交付包含以下 6
 4. 点击引用跳转对应原件页，核对条文与高亮。继续追问：**这些要求分别适用于哪些工程或环境条件？**
 5. 进入「导入文档」追加自己的 PDF，或「导入规范文件夹」批量追加，可单独建立文件分组。默认库与个人材料共同参与全库检索，不会互相替换。
 
+## 首次安装失败后的恢复
+
+1.3.5 修复 Windows PowerShell 5.1 在深层目录中的长路径解压失败，并以 UTF-8 显示中文错误。无需修改系统注册表或以管理员身份运行。将新版 EXE 放到原文件夹，保留全部 5 个资源 ZIP 和 workspace，重新运行即可恢复安装；不必删除已经解压的内容。每个文件完整写入后才替换旧文件，失败时保留原文件。
+
 ## 完整 PDF 阅读
 
 PDF.js 6.3.289、匹配的 Worker、中文 CMap、标准字体、JPEG2000/JBIG2 图像解码和 ICC 支持文件全部随程序提供，不依赖 CDN。打开文档先完整读取该 PDF，再渲染目标页与引用高亮；显示读取字节进度。完整原件保存到磁盘；无需把整个规范库同时放入内存。PDF 文件页码可能不同于印刷页码。
@@ -37,7 +41,7 @@ PDF.js 6.3.289、匹配的 Worker、中文 CMap、标准字体、JPEG2000/JBIG2 
 
 1.3.4 优先读取公开组件更新清单，避免 GitHub 匿名 API 配额耗尽导致 403，并修正 Electron 下载重定向的处理。无需 GitHub 令牌。
 
-打开「设置 → 组件更新」：检查更新 → 下载更新 → SHA256 校验 → 安装并重启。仅选择 `component-v...` 的知识组件版本，不采用数字孪生主程序的发布版本。更新保留现有 API 设置、对话、资料、索引和解析引擎。1.3.3 及更早版本需先手动运行一次 1.3.4，之后可在组件内更新。
+打开「设置 → 组件更新」：检查更新 → 下载更新 → SHA256 校验 → 安装并重启。仅选择 `component-v...` 的知识组件版本，不采用数字孪生主程序的发布版本。更新保留现有 API 设置、对话、资料、索引和解析引擎。能够启动的 1.3.4 可直接在组件内更新；若首次解压尚未完成，请手动下载并运行一次 1.3.5。
 
 更新服务需连接 GitHub；规范检索、原文阅读和本地解析可离线运行。在线模型问答需要自己的有效 API 和网络。程序当前未做商业代码签名；源码、SHA256 和验收结果随 Release 提供。
 
