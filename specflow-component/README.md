@@ -1,8 +1,8 @@
-# SpecFlow 知识组件 1.3.6 · 完整离线数据库与独立更新
+# SpecFlow 知识组件 1.3.7 · 完整离线数据库与独立更新
 
 独立运行的文件存储、PDF 解析、规范检索、连续问答和原文阅读组件。基于 SpecFlow 0.11.1 裁剪，保留其图标、流式客户端、会话与引用契约。
 
-[完整下载](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/component-v1.3.6) · [接入接口](integration/README.md) · [预置规范目录](presets/施工验收规范目录.csv)
+[完整下载](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/component-v1.3.7) · [接入接口](integration/README.md) · [预置规范目录](presets/施工验收规范目录.csv)
 
 ## 下载与启动
 
@@ -10,7 +10,7 @@ Windows x64，建议预留至少 12 GB 磁盘空间。完整交付包含以下 6
 
 | 文件 | 用途 |
 | --- | --- |
-| `SpecFlow-Knowledge-Component-1.3.6-x64.exe` | 独立桌面程序 |
+| `SpecFlow-Knowledge-Component-1.3.7-x64.exe` | 独立桌面程序 |
 | `SpecFlow-1.3.2-Parsing-Engine-Windows-x64.zip` | 沿用已验证的 CPython、MinerU、CPU PyTorch 和 9 个本地模型 |
 | `SpecFlow-1.3.2-Default-Database-01.zip` | 基础规范库第 1 包 |
 | `SpecFlow-1.3.2-Default-Database-02.zip` | 基础规范库第 2 包 |
@@ -42,6 +42,12 @@ API 地址可以填写基础地址、/v1 前缀或完整 /chat/completions 地�
 PDF.js 6.3.289、匹配的 Worker、中文 CMap、标准字体、JPEG2000/JBIG2 图像解码和 ICC 支持文件全部随程序提供，不依赖 CDN。打开文档先完整读取该 PDF，再渲染目标页与引用高亮；显示读取字节进度。完整原件保存到磁盘；无需把整个规范库同时放入内存。PDF 文件页码可能不同于印刷页码。
 
 运行模块在首次启动时复制到 `%LOCALAPPDATA%/SpecFlowKnowledgeComponent/runtime`，每次启动校验、补齐损坏文件。PDF 和后台任务模块不再依赖可能被清理的临时解压目录。
+
+## 更新后窗口不再打开的修复
+
+1.3.7 修复 Windows 分离启动 PowerShell 时安装助手静默退出的问题。使用随解析引擎提供的 Python 后台中继启动安装助手，无需安装系统 Python；旧窗口收到助手就绪回执后才退出，助手等待旧程序及便携启动器退出后再安装，以正常窗口方式启动新版，并等待新版服务及可见窗口确认。
+
+安装助手准备失败时当前窗口保持运行、允许重试。安装日志为 `workspace/data/updates/install.log`、`helper-console.log` 和 `last-result.json`。启动失败不再提前记录成功，可安全重新打开旧版时会尝试恢复。旧安装器无法自行修复，所以 1.3.6 及更早版本若遇到关闭后无窗口，请先手动下载并运行 1.3.7 EXE 一次，保留原有资源 ZIP 和 workspace。
 
 ## 独立组件更新
 

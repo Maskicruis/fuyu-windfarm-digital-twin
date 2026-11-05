@@ -27,3 +27,11 @@ test('truncated or corrupted update never becomes installable; retry succeeds',a
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'specflow-update-'));let corrupt=true;
  try{const update=new ComponentUpdater({current:'1.3.3',root,fetch:async url=>url.includes('/releases?')?new Response(JSON.stringify([release()])):new Response(corrupt?bytes.subarray(2):bytes),apply:async()=>{}});await update.check();await assert.rejects(()=>update.download(),/校验失败/);assert.equal(update.package,null);assert.equal(update.status().phase,'error');corrupt=false;assert.equal((await update.download()).phase,'ready');}finally{fs.rmSync(root,{recursive:true,force:true});}
 });
+
+test('failed installer preparation remains retryable and a prior failed restart is visible after reopening',async()=>{
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'specflow-apply-'));try{
+  const folder=path.join(root,'workspace/data/updates');fs.mkdirSync(folder,{recursive:true});fs.writeFileSync(path.join(folder,'last-result.json'),JSON.stringify({success:false,message:'startup receipt missing'}));
+  const updater=new ComponentUpdater({current:'1.3.3',root,fetch:async url=>url.includes('/releases?')?new Response(JSON.stringify([release()])):new Response(bytes),apply:async()=>{throw Error('helper blocked');}});
+  assert.match(updater.status().message,/startup receipt missing/);await updater.check();await updater.download();await assert.rejects(updater.install(),/helper blocked/);assert.equal(updater.status().phase,'ready');assert.equal(updater.status().busy,false);assert.match(updater.status().message,/helper blocked/);
+ }finally{fs.rmSync(root,{recursive:true,force:true});}
+});

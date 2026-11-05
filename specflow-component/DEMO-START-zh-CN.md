@@ -1,6 +1,6 @@
-# 主管演示快速开始 · 1.3.6
+# 主管演示快速开始 · 1.3.7
 
-[完整下载页](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/component-v1.3.6)
+[完整下载页](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/component-v1.3.7)
 
 1. 下载该页 EXE 和全部 5 个资源 ZIP，放在同一文件夹，双击 EXE。首次自动校验并解压；也可仅运行 EXE 联网自动下载。无需另外安装解析软件或模型。
 2. 「文档数据库 → 施工验收规范」自带 71 份原件，全部已预解析。可先直接打开原文，再到「设置 → 模型接口」配置自己的 API。

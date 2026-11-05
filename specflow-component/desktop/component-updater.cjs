@@ -20,7 +20,7 @@ function selectRelease(releases,current){
  return choices.sort((a,b)=>newer(a.version,b.version)?-1:newer(b.version,a.version)?1:0)[0]||null;
 }
 class ComponentUpdater{
- constructor({current,root,fetch,apply}){version(current);this.current=current;this.root=path.resolve(root);this.fetch=fetch;this.apply=apply;this.folder=path.join(this.root,'workspace/data/updates');this.item=null;this.busy=false;this.package=null;this.state={phase:'idle',message:'检查独立知识组件更新',progress:0};}
+ constructor({current,root,fetch,apply}){version(current);this.current=current;this.root=path.resolve(root);this.fetch=fetch;this.apply=apply;this.folder=path.join(this.root,'workspace/data/updates');this.item=null;this.busy=false;this.package=null;this.state={phase:'idle',message:'检查独立知识组件更新',progress:0};try{const result=JSON.parse(fs.readFileSync(path.join(this.folder,'last-result.json'),'utf8').replace(/^\uFEFF/,''));if(result.success===false)this.state.message='上次更新未完成：'+result.message+'。详情：updates/install.log';else if(result.success&&result.version===current)this.state.message='已更新至 V'+current+'，新版服务与窗口启动已确认。';}catch{}}
  status(){return {...this.state,currentVersion:this.current,availableVersion:this.item?.version||null,releaseUrl:this.item?.releaseUrl||null,notes:this.item?.notes||'',repository:REPOSITORY,busy:this.busy,canInstall:!!this.apply};}
  async response(url,timeout=45000){for(let redirects=0;redirects<6;redirects++){
   trustedUrl(url);const response=await this.fetch(url,{redirect:'follow',signal:AbortSignal.timeout(timeout),headers:{'User-Agent':'SpecFlow-Component-Updater/'+this.current,'Accept':new URL(url).hostname==='api.github.com'?'application/vnd.github+json':'application/octet-stream'}});
@@ -62,8 +62,8 @@ class ComponentUpdater{
   try{
   const file=this.package,item=this.item,hash=crypto.createHash('sha256');for await(const chunk of fs.createReadStream(file))hash.update(chunk);
   if(hash.digest('hex')!==item.sha256)throw Error('更新文件已变化，请重新下载');
-  this.state={...this.state,phase:'installing',message:'正在保存数据并重启知识组件…'};await this.apply({file,item});return this.status();
-  }finally{this.busy=false;}
+  this.state={...this.state,phase:'installing',message:'正在准备独立安装助手，确认后重启…'};await this.apply({file,item});return this.status();
+  }catch(error){this.state={...this.state,phase:'ready',message:'安装未启动：'+error.message+' 可重试。'};throw error;}finally{this.busy=false;}
  }
 }
 module.exports={ComponentUpdater,selectRelease,newer,trustedUrl};

@@ -25,7 +25,7 @@ async function openWindow(){
   window.webContents.on('will-navigate',(event,target)=>{if(!target.startsWith(serviceUrl)){event.preventDefault();if(/^https?:\/\//i.test(target))shell.openExternal(target);}});
   for(const event of ['maximize','unmaximize'])window.on(event,()=>window?.webContents.send('window:maximized',window.isMaximized()));
   window.on('closed',()=>{window=null;});
-  await window.loadURL(serviceUrl);return window;
+  await window.loadURL(serviceUrl);window.show();window.focus();return window;
  })();
  try{return await opening;}finally{opening=null;}
 }
@@ -58,12 +58,9 @@ else{
   ipcMain.handle('desktop:info',()=>({name:'SpecFlow 知识组件',version:app.getVersion(),platform:process.platform,dataDir:data,url,port,configuredPort:requested,fallback:requested>0&&requested!==port}));
   const {ComponentUpdater}=require('./component-updater.cjs');
   updater=new ComponentUpdater({current:app.getVersion(),root:portable,fetch:(url,options)=>net.fetch(url,options),apply:ownsData&&app.isPackaged?async({file,item})=>{
-   const directory=path.join(portable,'workspace/data/updates');fs.mkdirSync(directory,{recursive:true});
-   const worker=path.join(directory,'apply-component-update.ps1'),plan=path.join(directory,'install-plan.json');
-   fs.copyFileSync(path.join(__dirname,'apply-component-update.ps1'),worker);
-   fs.writeFileSync(plan,JSON.stringify({root:portable,file,name:item.name,version:item.version,sha256:item.sha256,pid:process.pid,previous:process.env.PORTABLE_EXECUTABLE_FILE||'',shortcuts:[path.join(portable,'打开知识组件.lnk'),path.join(path.dirname(portable),'打开独立知识组件.lnk')]}));
-   const helper=require('node:child_process').spawn('powershell.exe',['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',worker,'-Plan',plan],{detached:true,windowsHide:true,stdio:'ignore'});
-   await new Promise((resolve,reject)=>{helper.once('spawn',resolve);helper.once('error',reject);});helper.unref();setTimeout(()=>app.quit(),250);
+   await require('./update-handoff.cjs').startUpdateHelper({root:portable,dataDir:data,file,item,pid:process.pid,launcherPid:process.env.PORTABLE_EXECUTABLE_FILE?process.ppid:null,previous:process.env.PORTABLE_EXECUTABLE_FILE||'',launchArgs:args.filter(x=>['--no-bundle','--offline-resources'].includes(x))});
+   // Do not close until the independent helper has validated the plan and is waiting.
+   setTimeout(()=>app.quit(),250);
   }:null});
   for(const [name,action] of [['status',()=>updater.status()],['check',()=>updater.check()],['download',()=>updater.download()],['install',()=>updater.install()]])ipcMain.handle('component-update:'+name,(event)=>{if(window&&event.sender.id!==window.webContents.id)throw Error('更新请求来源无效');return action();});
   ipcMain.handle('desktop:open-data',()=>shell.openPath(data));
@@ -72,7 +69,7 @@ else{
   ipcMain.handle('window:is-maximized',()=>!!window?.isMaximized());
   ipcMain.on('window:minimize',()=>window?.minimize());ipcMain.on('window:toggle-maximize',()=>{if(window?.isMaximized())window.unmaximize();else window?.maximize();});ipcMain.on('window:close',()=>window?.close());
   backend?.server.on('specflow:open-citation',async payload=>{if(!payload.docId)return;try{const target=await openWindow();if(!target)return;const script='openCitation('+[String(payload.docId),Math.max(1,Number(payload.page)||1),String(payload.ref||''),payload.bbox||'',payload.bboxNormalized||'',String(payload.itemId||'')].map(x=>JSON.stringify(x)).join(',')+')';await target.webContents.executeJavaScript(script);}catch{}});
-  if(showWhenReady)await openWindow();
+  if(showWhenReady){await openWindow();if(ownsData&&require('./update-handoff.cjs').acknowledgeStartup({root:portable,requestId:value('--update-token'),version:app.getVersion(),pid:process.pid,visible:window?.isVisible()}))updater.state={phase:'current',message:'已更新至 V'+app.getVersion()+'，新版服务与窗口已启动。',progress:100};}
  }).catch(error=>{fs.appendFileSync(path.join(data,'desktop-error.log'),String(error.stack||error)+'\n');if(!headless)dialog.showErrorBox('SpecFlow 知识组件启动失败',error.message);app.quit();});
  app.on('window-all-closed',()=>{if(!headless)app.quit();});
  app.on('before-quit',event=>{if(!backend||shuttingDown)return;event.preventDefault();shuttingDown=true;backend.server.close();Promise.resolve(backend.service.shutdown()).catch(()=>{}).finally(()=>{ownerLock.release();app.quit();});});
