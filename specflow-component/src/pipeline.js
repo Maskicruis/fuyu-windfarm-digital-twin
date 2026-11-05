@@ -75,6 +75,7 @@ async function parseFile({
   sourceName,
   inputPath,
   workDir,
+  checkpointDir,
   outputDir,
   executable,
   parserOptions,
@@ -94,12 +95,16 @@ async function parseFile({
     onLog?.('扫描件或文字层不完整，转入 MinerU OCR。');
   }
   if(nativeOnly)return {needsOCR:true};
-  const attemptDir=ensureDir(path.join(workDir,'attempt-'+require('node:crypto').randomUUID()));
+  const attemptDir=ensureDir(path.join(workDir,'a-'+require('node:crypto').randomBytes(6).toString('hex')));
+  const bundled=path.basename(executable||'').toLowerCase()==='python.exe'&&fs.existsSync(path.join(path.dirname(executable),'../run_mineru.py'));
+  // The user's title remains in metadata; native tools only see a short ASCII name.
+  const parserInput=bundled?path.join(workDir,'input.pdf'):inputPath;
+  if(parserInput!==inputPath){const temporary=parserInput+'.tmp';try{await fs.promises.copyFile(inputPath,temporary);await fs.promises.rename(temporary,parserInput);}finally{await fs.promises.rm(temporary,{force:true});}}
   await runMineru({
     executable,
-    inputPath,
+    inputPath:parserInput,
     outputDir: attemptDir,
-    checkpointDir:ensureDir(path.join(workDir,'checkpoints')),
+    checkpointDir:ensureDir(checkpointDir||path.join(workDir,'checkpoints')),
     options: parserOptions,
     onProgress,
     onLog,

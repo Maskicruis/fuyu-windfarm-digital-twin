@@ -1,8 +1,8 @@
-# SpecFlow 知识组件 1.3.5 · 完整离线数据库与独立更新
+# SpecFlow 知识组件 1.3.6 · 完整离线数据库与独立更新
 
 独立运行的文件存储、PDF 解析、规范检索、连续问答和原文阅读组件。基于 SpecFlow 0.11.1 裁剪，保留其图标、流式客户端、会话与引用契约。
 
-[完整下载](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/component-v1.3.5) · [接入接口](integration/README.md) · [预置规范目录](presets/施工验收规范目录.csv)
+[完整下载](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/component-v1.3.6) · [接入接口](integration/README.md) · [预置规范目录](presets/施工验收规范目录.csv)
 
 ## 下载与启动
 
@@ -10,7 +10,7 @@ Windows x64，建议预留至少 12 GB 磁盘空间。完整交付包含以下 6
 
 | 文件 | 用途 |
 | --- | --- |
-| `SpecFlow-Knowledge-Component-1.3.5-x64.exe` | 独立桌面程序 |
+| `SpecFlow-Knowledge-Component-1.3.6-x64.exe` | 独立桌面程序 |
 | `SpecFlow-1.3.2-Parsing-Engine-Windows-x64.zip` | 沿用已验证的 CPython、MinerU、CPU PyTorch 和 9 个本地模型 |
 | `SpecFlow-1.3.2-Default-Database-01.zip` | 基础规范库第 1 包 |
 | `SpecFlow-1.3.2-Default-Database-02.zip` | 基础规范库第 2 包 |
@@ -26,6 +26,12 @@ Windows x64，建议预留至少 12 GB 磁盘空间。完整交付包含以下 6
 3. 选择「严格规范」，提问：**请综合数据库中的相关规范，分别说明不同适用对象的混凝土养护要求，并列出原文依据。**
 4. 点击引用跳转对应原件页，核对条文与高亮。继续追问：**这些要求分别适用于哪些工程或环境条件？**
 5. 进入「导入文档」追加自己的 PDF，或「导入规范文件夹」批量追加，可单独建立文件分组。默认库与个人材料共同参与全库检索，不会互相替换。
+
+## 跨电脑解析与接口排错
+
+1.3.6 将内置 OCR 的工作文件放在当前用户本地的短缓存目录，以短英文文件名传入底层库；最终原件、标题、坐标和资料仍保存在自己设置的资料库。已有旧目录检查点会在重试时复制到新工作区，失败任务显示已保存页数、可读错误摘要和可展开的错误详情。“继续重试”保留检查点；已完成文件的“重解析”才重新处理。
+
+API 地址可以填写基础地址、/v1 前缀或完整 /chat/completions 地址，不会重复拼接。404 会显示实际请求位置并提醒核对地址和模型；不自动替换模型，不绕过严格规范模式。
 
 ## 首次安装失败后的恢复
 

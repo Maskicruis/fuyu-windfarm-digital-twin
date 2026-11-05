@@ -15,6 +15,8 @@ const { ask: askWithContext, askStream: askStreamContext } = require('./qa');
 const embeddings = require('./embeddings');
 const { isConfigured: llmConfigured, visionModel } = require('./llm');
 const { ChatImages, IMAGE_LIMITS, ImageInputError, DEFAULT_IMAGE_QUESTION, contentText } = require('./chat-images');
+const {workspace:parserWorkspace,prepareWorkspace}=require('./parser-workspace');
+const {parserErrorSummary}=require('./parser-errors');
 const { SCENARIOS } = require('./scenarios');
 const { decorateCitation } = require('./citation-links');
 const { planQuery } = require('./query-planner');
@@ -217,6 +219,7 @@ class KnowledgeBaseService {
   enqueue(document) {
     document.status = 'queued';
     document.progress = 0;
+    delete document.errorSummary;delete document.errorCode;document.error='';
     document.progressText = '排队中';
     document.updatedAt = nowIso();
     this.persist();
@@ -262,9 +265,10 @@ class KnowledgeBaseService {
     const document = this.get(id);
     if (!document) return;
     document.status = 'error';
-    document.progress = 0;
     document.progressMode = 'determinate';
-    document.progressText = '失败';
+    document.progressText = '解析失败，可继续重试';
+    document.errorSummary=parserErrorSummary(error);
+    document.errorCode=error?.code||'PARSER_FAILED';
     document.error = String(error && error.message || error).slice(-3000);
     document.updatedAt = nowIso();
     this.persist();
@@ -280,12 +284,14 @@ class KnowledgeBaseService {
     delete document.logTail;
     document.progressText = ocr?'扫描件 OCR 中…':'快速读取文字层…';
     document.error = '';
+    delete document.errorSummary;delete document.errorCode;
     document.updatedAt = nowIso();
     this.persist();
-    const workDir = resolveInside(WORK, document.id);
+    const layout=await prepareWorkspace(parserWorkspace(DATA,document.id,this.settings.mineru));
+    const workDir = layout.directory;
     // Failed attempts are isolated; completed OCR windows survive retries/restarts.
     ensureDir(workDir);
-    if(document.forceReparse){await fs.promises.rm(resolveInside(workDir,'checkpoints'),{recursive:true,force:true});delete document.forceReparse;this.persist();}
+    if(document.forceReparse){await fs.promises.rm(layout.checkpoints,{recursive:true,force:true});delete document.forceReparse;this.persist();}
     const paths = this.paths(document);
     const corrections = readJson(paths.corrections, {});
     let lastSave = 0;
@@ -302,6 +308,7 @@ class KnowledgeBaseService {
       sourceName: document.file,
       inputPath: document.inputPath,
       workDir,
+      checkpointDir:layout.checkpoints,
       outputDir: paths.outputDir,
       executable: this.settings.mineru,
       parserOptions: {...document.parserOptions,...(ocr?{method:'ocr'}:{})},
