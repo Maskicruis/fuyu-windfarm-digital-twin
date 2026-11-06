@@ -13,7 +13,7 @@ const { version: VERSION } = require('../package.json');
 const { SqliteRagIndex: RagIndex } = require('./sqlite-rag');
 const { ask: askWithContext, askStream: askStreamContext } = require('./qa');
 const embeddings = require('./embeddings');
-const { isConfigured: llmConfigured, visionModel } = require('./llm');
+const { isConfigured: llmConfigured, visionModel,mergeLlm,listModels,chat,chatEndpoint } = require('./llm');
 const { ChatImages, IMAGE_LIMITS, ImageInputError, DEFAULT_IMAGE_QUESTION, contentText } = require('./chat-images');
 const {workspace:parserWorkspace,prepareWorkspace}=require('./parser-workspace');
 const {parserErrorSummary}=require('./parser-errors');
@@ -402,7 +402,7 @@ class KnowledgeBaseService {
     }
     if (patch.host) next.host = String(patch.host);
     if (patch.parser) next.parser = normalizeParserOptions(Object.assign({}, next.parser, patch.parser));
-    if (patch.llm) next.llm = Object.assign({}, next.llm, patch.llm);
+    if (patch.llm) next.llm = mergeLlm(next.llm, patch.llm);
     const priorLibrary=this.settings.library;
     this.settings = saveSettings(next);
     if(priorLibrary!==this.settings.library){this.rag.close?.();this.rag = new RagIndex(this.settings);}else this.rag.settings=this.settings;
@@ -751,6 +751,14 @@ class KnowledgeBaseService {
   llmStatus() {
     const llm = this.settings.llm || {};
     return { configured: llmConfigured(llm), baseUrl: llm.baseUrl || '', model: llm.model || '', visionModel: visionModel(llm), hasKey: !!String(llm.apiKey || '').trim() };
+  }
+  async llmModels(patch={}) {return listModels(mergeLlm(this.settings.llm,patch));}
+  async testLlm(patch={}) {
+    const cfg=mergeLlm(this.settings.llm,patch);
+    const result=await chat({...cfg,thinking:false},[{role:'user',content:'连接测试，请只回复 OK。'}],{maxTokens:16});
+    if(!result.ok)return result;
+    const url=new URL(chatEndpoint(cfg.baseUrl));
+    return result.ok?{ok:true,model:result.model,endpoint:url.origin+url.pathname,reply:result.content}:result;
   }
 
   health() {

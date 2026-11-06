@@ -1,8 +1,18 @@
-# SpecFlow 知识组件 1.3.7 · 完整离线数据库与独立更新
+# SpecFlow 知识组件 1.3.8 · 完整离线数据库与独立更新
 
 独立运行的文件存储、PDF 解析、规范检索、连续问答和原文阅读组件。基于 SpecFlow 0.11.1 裁剪，保留其图标、流式客户端、会话与引用契约。
 
-[完整下载](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/component-v1.3.7) · [接入接口](integration/README.md) · [预置规范目录](presets/施工验收规范目录.csv)
+[完整下载](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/component-v1.3.8) · [接入接口](integration/README.md) · [预置规范目录](presets/施工验收规范目录.csv)
+
+## SiliconFlow 等第三方平台
+
+SiliconFlow 的接口地址可填写 `https://api.siliconflow.cn/v1`，或完整 `/v1/chat/completions` 地址；根地址及缺少 /v1 的完整地址会自动规范。请使用该平台的密钥，并原样填写平台完整模型 ID（例如官方文档示例 `deepseek-ai/DeepSeek-V4-Flash`，实际以当前账户模型列表为准，保留 Pro/ 等前缀）。
+
+设置中“SiliconFlow 示例”填写示例地址/模型后，请输入平台密钥，点击“读取模型列表”选择实际可用模型，再“测试连接”。测试只发送一条连接测试消息，不发送资料库内容、不创建对话、不保存草稿配置；测试成功后仍需点击“保存模型设置”。读取列表可能受平台权限影响，无法列出时也可以手动填写模型 ID 后测试。
+
+SiliconFlow 的可切换思考模型使用 enable_thinking；DeepSeek 官方使用 thinking.type，通用兼容服务不强加厂商参数。切换 API 源站后不能留空沿用旧平台密钥，同一源站修正地址则保留旧密钥。HTTP 错误展示平台返回的代码/原因和可用的请求跟踪 ID，密钥隐藏。
+
+本地没有 SiliconFlow 账户密钥，未进行该账户的真实付费推理；兼容性以官方协议和受控接口测试验证，实际权限、余额、模型是否可用请用“测试连接”确认。
 
 ## 下载与启动
 
@@ -10,7 +20,7 @@ Windows x64，建议预留至少 12 GB 磁盘空间。完整交付包含以下 6
 
 | 文件 | 用途 |
 | --- | --- |
-| `SpecFlow-Knowledge-Component-1.3.7-x64.exe` | 独立桌面程序 |
+| `SpecFlow-Knowledge-Component-1.3.8-x64.exe` | 独立桌面程序 |
 | `SpecFlow-1.3.2-Parsing-Engine-Windows-x64.zip` | 沿用已验证的 CPython、MinerU、CPU PyTorch 和 9 个本地模型 |
 | `SpecFlow-1.3.2-Default-Database-01.zip` | 基础规范库第 1 包 |
 | `SpecFlow-1.3.2-Default-Database-02.zip` | 基础规范库第 2 包 |

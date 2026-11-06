@@ -6,6 +6,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { DATA } = require('./config');
 const { ensureDir, readJson, writeJson } = require('./utils');
+const {resourceEndpoint}=require('./llm');
 
 const CACHE_DIR = path.join(DATA, 'embeddings');
 function fingerprint(text) { return crypto.createHash('sha1').update(String(text || '')).digest('hex').slice(0, 16); }
@@ -21,8 +22,7 @@ function saveCache(docId, model, vectors) { writeJson(cacheFile(docId), { model,
 async function embed(llm, texts) {
   const cfg = llm || {};
   if (!isConfigured(cfg)) return { ok: false, error: '未配置 embedding 模型', code: 'EMBEDDING_NOT_CONFIGURED' };
-  const base = String(cfg.baseUrl).replace(/\/+$/, '');
-  const url = (/\/v1$/.test(base) ? base : base + '/v1') + '/embeddings';
+  let url;try{url=resourceEndpoint(cfg.baseUrl,'embeddings');}catch(error){return {ok:false,error:error.message,code:'EMBEDDING_CONFIG_ERROR'};}
   const headers = { 'Content-Type': 'application/json' };
   if (String(cfg.apiKey || '').trim()) headers.Authorization = 'Bearer ' + String(cfg.apiKey).trim();
   try {

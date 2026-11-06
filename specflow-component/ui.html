@@ -585,7 +585,7 @@ canvas{box-shadow:var(--shadow)}
             </section>
             <section class="settings-pane" data-settings-pane="model">
               <header class="settings-pane-head"><h3>模型接口</h3><p>配置兼容 OpenAI 协议的对话与向量服务。</p></header>
-              <div class="settings-section"><div class="settings-section-title">OpenAI 兼容接口</div><div class="llm-fields"><input id="llmBase" class="wide" aria-label="模型接口地址" placeholder="https://api.deepseek.com（也支持完整接口地址）"><input id="llmModel" aria-label="对话模型" placeholder="对话模型，如 deepseek-flash"><input id="llmEmbed" aria-label="向量模型" placeholder="向量模型（可选）"><input id="llmVision" class="wide" aria-label="图像模型（可选）" placeholder="图像模型（可选，如 deepseek-flash）"><input id="llmKey" class="wide" type="password" autocomplete="off" placeholder="API Key（留空保留已保存密钥）"><input id="llmTimeout" class="wide" type="number" min="5000" max="600000" step="1000" placeholder="请求超时，毫秒"></div><div class="field-help">DeepSeek 官方接口的图片对话自动使用 deepseek-flash。其他兼容接口可填写图像模型；留空则使用对话模型。图片可通过粘贴、拖入或输入框左下角“＋”添加。</div><div class="settings-actions"><button class="btn btn-primary" data-act="saveLlm">保存模型设置</button><button class="btn" data-act="clearLlmKey">清除密钥</button></div><label class="switch"><input id="llmThinking" type="checkbox"><span>深度思考（关闭时首字更快；仅 DeepSeek 官方接口）</span></label><div id="llmState" class="field-help"></div></div>
+              <div class="settings-section"><div class="settings-section-title">OpenAI 兼容接口</div><div class="llm-fields"><input id="llmBase" class="wide" aria-label="模型接口地址" placeholder="https://api.deepseek.com（也支持完整接口地址）"><input id="llmModel" list="llmModelList" aria-label="对话模型" placeholder="填写服务商完整模型 ID"><datalist id="llmModelList"></datalist><input id="llmEmbed" aria-label="向量模型" placeholder="向量模型（可选）"><input id="llmVision" class="wide" aria-label="图像模型（可选）" placeholder="图像模型（可选，如 deepseek-flash）"><input id="llmKey" class="wide" type="password" autocomplete="off" placeholder="API Key（留空保留已保存密钥）"><input id="llmTimeout" class="wide" type="number" min="5000" max="600000" step="1000" placeholder="请求超时，毫秒"></div><div class="field-help">第三方平台请使用该平台的密钥与完整模型 ID（含 deepseek-ai/、Pro/ 等前缀）。SiliconFlow 地址示例：https://api.siliconflow.cn/v1。可先读取模型列表，再测试连接；这两项操作不保存配置、不发送资料库内容。图片输入需填写平台支持的视觉模型。</div><div class="settings-actions"><button class="btn btn-primary" data-act="saveLlm">保存模型设置</button><button class="btn" data-act="siliconflowPreset">SiliconFlow 示例</button><button class="btn" data-act="llmModels" id="llmModelsButton">读取模型列表</button><button class="btn" data-act="llmTest" id="llmTestButton">测试连接</button><button class="btn" data-act="clearLlmKey">清除密钥</button></div><label class="switch"><input id="llmThinking" type="checkbox"><span>思考模式（DeepSeek 官方 / SiliconFlow 支持切换的模型）</span></label><div id="llmState" class="field-help"></div></div>
             </section>
             
             
@@ -846,6 +846,27 @@ async function loadLlmState(){
     if(d.baseUrl){ var b=document.getElementById('llmBase'); if(b&&!b.value) b.value=d.baseUrl; }
     if(d.model){ var m=document.getElementById('llmModel'); if(m&&!m.value) m.value=d.model; }
   }catch(e){}
+}
+function llmFormValues(){
+  var value={baseUrl:document.getElementById('llmBase').value.trim(),model:document.getElementById('llmModel').value.trim(),thinking:document.getElementById('llmThinking').checked,embeddingModel:document.getElementById('llmEmbed').value.trim(),visionModel:document.getElementById('llmVision').value.trim(),timeoutMs:Number(document.getElementById('llmTimeout').value)||120000};
+  var key=document.getElementById('llmKey').value.trim();if(key)value.apiKey=key;return value;
+}
+function siliconflowPreset(){
+  document.getElementById('llmBase').value='https://api.siliconflow.cn/v1';
+  document.getElementById('llmModel').value='deepseek-ai/DeepSeek-V4-Flash';
+  document.getElementById('llmVision').value='';document.getElementById('llmEmbed').value='';document.getElementById('llmKey').value='';
+  document.getElementById('llmState').textContent='已填入 SiliconFlow 地址及示例模型。请输入该平台密钥，读取模型列表核对当前可用的完整 ID，然后保存。';
+}
+var LLM_CHECK_BUSY=false;
+async function inspectLlm(action){
+  if(LLM_CHECK_BUSY)return;LLM_CHECK_BUSY=true;
+  var state=document.getElementById('llmState'),buttons=[document.getElementById('llmModelsButton'),document.getElementById('llmTestButton')];buttons.forEach(function(b){b.disabled=true;});
+  state.textContent=action==='models'?'正在读取平台模型列表…':'正在测试当前填写的接口与模型…';
+  try{
+    var body=await api('v1/llm/'+action,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({llm:llmFormValues()})});var data=body.data;
+    if(action==='models'){document.getElementById('llmModelList').innerHTML=data.models.map(function(id){return '<option value="'+attr(id)+'"></option>';}).join('');state.textContent='已读取 '+data.models.length+' 个模型。点击对话模型输入框选择或输入完整 ID；请保存配置后开始问答。';}
+    else state.textContent='连接成功 · '+data.model+' · '+data.endpoint+' · '+data.reply+'（请保存配置后开始问答）';
+  }catch(error){state.textContent='检查失败：'+error.message;}finally{LLM_CHECK_BUSY=false;buttons.forEach(function(b){b.disabled=false;});}
 }
 async function saveLlm(){
   var baseUrl=document.getElementById('llmBase').value.trim();
@@ -1154,6 +1175,9 @@ document.addEventListener('click',async function(e){
   else if(act==='latestAnswer'){ scrollConversation(true); }
   else if(act==='theme'){ toggleTheme(); }
   else if(act==='saveLlm'){ saveLlm(); }
+  else if(act==='siliconflowPreset'){ siliconflowPreset(); }
+  else if(act==='llmModels'){ inspectLlm('models'); }
+  else if(act==='llmTest'){ inspectLlm('test'); }
   else if(act==='clearLlmKey'){ clearLlmKey(); }
   else if(act==='chooseLibrary'){ chooseLibrary(); }
   else if(act==='chooseMineru'){ chooseMineru(); }

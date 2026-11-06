@@ -11,7 +11,7 @@
 ## 两项交付
 
 1. `../扶余一号数字孪生/扶余一号数字孪生.exe`：展示前端、拖拽控制后台、设置、悬浮智能体及现有三维场景。
-2. `../知识与大模型独立组件/SpecFlow-Knowledge-Component-1.3.7-x64.exe`：[独立组件发布页](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/component-v1.3.7)。基于 SpecFlow 裁剪，支持文字层快速提取、离线 OCR、持久化 FTS、三种回答模式与按页原文阅读；1.3.1 增加真实页数进度、检查点恢复及有次数限制的停滞恢复。来源和适配模块分别登记在 `specflow-component/` 的 provenance 文件；见[使用说明](specflow-component/README.md)与[验收记录](docs/COMPONENT-1.3.7-VALIDATION.md)。主程序版本继续为 V0.9.4。
+2. `../知识与大模型独立组件/SpecFlow-Knowledge-Component-1.3.8-x64.exe`：[独立组件发布页](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/component-v1.3.8)。基于 SpecFlow 裁剪，支持文字层快速提取、离线 OCR、持久化 FTS、三种回答模式与按页原文阅读；1.3.1 增加真实页数进度、检查点恢复及有次数限制的停滞恢复。来源和适配模块分别登记在 `specflow-component/` 的 provenance 文件；见[使用说明](specflow-component/README.md)与[验收记录](docs/COMPONENT-1.3.8-VALIDATION.md)。主程序版本继续为 V0.9.4。
 
 ## 项目总览
 
@@ -78,6 +78,6 @@ npm run build --prefix specflow-component
 
 ### 默认规范库和解析引擎
 
-[完整下载：EXE、解析引擎、三个默认数据库包](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/component-v1.3.7)。这些文件直接在同一发布页的 Assets 下提供，不需要去旧版本寻找。
+[完整下载：EXE、解析引擎、三个默认数据库包](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/component-v1.3.8)。这些文件直接在同一发布页的 Assets 下提供，不需要去旧版本寻找。
 
 [浏览 71 份默认规范清单](specflow-component/presets/施工验收规范目录.csv)。默认库附带原件、66 份预解析内容和持久化索引，其余 5 份继续后台 OCR；用户可在文档数据库中追加个人 PDF。

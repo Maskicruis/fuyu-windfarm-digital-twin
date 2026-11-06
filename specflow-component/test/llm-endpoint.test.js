@@ -14,6 +14,6 @@ test('JSON and streaming both use a full configured URL without duplicate segmen
  await new Promise(r=>server.listen(0,'127.0.0.1',r));t.after(()=>new Promise(r=>{server.closeAllConnections();server.close(r);}));
  const cfg={baseUrl:'http://127.0.0.1:'+server.address().port+'/custom/chat/completions',model:'fixture',apiKey:'fixture-secret'};
  assert.equal((await chat(cfg,[])).content,'ok');assert.equal((await chatStream(cfg,[],()=>{})).content,'ok');
- fail=true;for(const result of [await chat(cfg,[]),await chatStream(cfg,[],()=>{})]){assert.equal(result.status,404);assert.match(result.error,/接口地址和模型名称/);assert.ok(!result.error.includes('fixture-secret'));}
+ fail=true;for(const result of [await chat(cfg,[]),await chatStream(cfg,[],()=>{})]){assert.equal(result.status,404);assert.match(result.error,/接口地址和.*模型/);assert.ok(!result.error.includes('fixture-secret'));}
  assert.ok(paths.every(p=>p==='/custom/chat/completions'));
 });

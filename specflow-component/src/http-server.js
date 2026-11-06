@@ -349,6 +349,10 @@ function createHttpServer({ service = new KnowledgeBaseService() } = {}) {
       }
       if (pathname === '/api/v1/scenarios' && request.method === 'GET') return success(response, { scenarios: service.scenarios() });
       if (pathname === '/api/v1/llm' && request.method === 'GET') return success(response, service.llmStatus());
+      if (['/api/v1/llm/models','/api/v1/llm/test'].includes(pathname) && request.method === 'POST') {
+        const body=await readJsonBody(request),result=pathname.endsWith('/models')?await service.llmModels(body.llm||{}):await service.testLlm(body.llm||{});
+        if(!result.ok)throw new HttpError(502,result.error,result.code);return success(response,result);
+      }
 
       if ((pathname === '/api/v1/jobs' || pathname === '/api/v1/documents') && request.method === 'GET') {
         const hasGroup = url.searchParams.has('group');
