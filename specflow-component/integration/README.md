@@ -29,6 +29,7 @@ await client.askStream({question:'请核查该工序要求',conversationId:'',re
 | 解析状态 | GET /api/v1/jobs/:id |
 | 文件分组 | GET/POST /api/v1/groups |
 | 检索 | GET /api/v1/search?q=…&doc=…&group=… |
+| JSON 问答 / 业务对象和数组 | POST /api/v1/ask/json；[接入示例与 OpenAPI](JSON-API-zh-CN.md) |
 | 连续对话 | POST /api/v1/ask/stream（沿用 conversationId） |
 | 会话恢复 | GET /api/v1/conversations/:id |
 | 精确定位所需块与坐标 | GET /api/v1/documents/:id/content |

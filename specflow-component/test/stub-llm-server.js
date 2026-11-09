@@ -13,7 +13,7 @@ function stubVector(text) {
 
 function createStubLlm(options = {}) {
   const answer = options.answer || '【STUB 回答】依据片段 [1]：消防车道净宽度不应小于 4.0m。[1]';
-  const state = { calls: 0, lastBody: null, bodies: [] };
+  const state = { calls: 0, lastBody: null, bodies: [], answer };
   const server = http.createServer((request, response) => {
     let raw = '';
     request.on('data', chunk => { raw += chunk; });
@@ -35,7 +35,7 @@ function createStubLlm(options = {}) {
         return response.end(JSON.stringify(body));
       }
       const contextRequest = options.imageContext && state.lastBody.messages.some(message => message.role === 'system' && /为规范检索提取图片/.test(message.content));
-      const content = contextRequest ? JSON.stringify(options.imageContext) : answer;
+      const content = contextRequest ? JSON.stringify(options.imageContext) : state.answer;
       if (state.lastBody && state.lastBody.stream) {
         response.writeHead(200, { 'Content-Type': 'text/event-stream' });
         response.write('data: ' + JSON.stringify({ choices: [{ delta: { content } }] }) + '\n\n');

@@ -7,6 +7,7 @@ const { DATA, ROOT } = require('./config');
 const { KnowledgeBaseService } = require('./service');
 const { toLegacyItems } = require('./transform');
 const { IMAGE_LIMITS } = require('./chat-images');
+const { compileOutputSchema } = require('./structured-answer');
 
 let sea = null;
 let runningAsSea = false;
@@ -109,12 +110,13 @@ function success(response, data, status = 200) {
   sendJson(response, status, { ok: true, apiVersion: API_VERSION, data });
 }
 
-function failure(response, error) {
+function failure(response, error, data) {
   const status = Number(error.status) || (/不存在|尚无/.test(error.message || '') ? 404 : 400);
   sendJson(response, status, {
     ok: false,
     apiVersion: API_VERSION,
-    error: { code: error.code || (status === 404 ? 'NOT_FOUND' : 'BAD_REQUEST'), message: String(error.message || error) }
+    error: { code: error.code || (status === 404 ? 'NOT_FOUND' : 'BAD_REQUEST'), message: String(error.message || error) },
+    ...(data ? { data } : {})
   });
 }
 
@@ -341,6 +343,46 @@ function createHttpServer({ service = new KnowledgeBaseService() } = {}) {
           ? service.searchWithPlan(q, { topK, docIds })
           : { query: q, queryPlan: null, hits: service.search(q, { topK, docIds }) };
         return success(response, Object.assign({ groupId: hasGroup ? url.searchParams.get('group') : null }, result));
+      }
+      if (pathname === '/api/v1/ask/json' && request.method === 'POST') {
+        if (String(request.headers['content-type'] || '').split(';')[0].trim().toLowerCase() !== 'application/json')
+          throw new HttpError(415, '请求须使用 Content-Type: application/json。', 'UNSUPPORTED_MEDIA_TYPE');
+        const body = await readJsonBody(request);
+        if (!body || typeof body !== 'object' || Array.isArray(body))
+          throw new HttpError(400, '请求体须为 JSON 对象。', 'INVALID_REQUEST');
+        if (body.responseMode !== undefined && !['envelope', 'raw'].includes(body.responseMode))
+          throw new HttpError(400, 'responseMode 须为 envelope 或 raw。', 'INVALID_RESPONSE_MODE');
+        const outputSchema = Object.hasOwn(body, 'responseSchema') ? compileOutputSchema(body.responseSchema) : null;
+        if (body.responseMode === 'raw' && !outputSchema)
+          throw new HttpError(400, 'raw 模式需要 responseSchema。', 'INVALID_RESPONSE_SCHEMA');
+        const controller = new AbortController();
+        const abort = () => controller.abort();
+        response.once('close', abort);
+        try {
+          const result = await service.ask(body, { outputSchema, signal: controller.signal });
+          if (controller.signal.aborted) return;
+          const { mode, grounding, citations, retrieval, clarification } = result;
+          if (result.ok === false)
+            return failure(response, new HttpError(result.status || 502, result.error, result.code || 'MODEL_ERROR'),
+              { mode, grounding, citations, retrieval, clarification });
+          if (outputSchema && !Object.hasOwn(result, 'result')) {
+            const unconfigured = ['unavailable', 'retrieval'].includes(mode);
+            return failure(response, new HttpError(unconfigured ? 503 : 422,
+              result.answer || result.note || '未生成结构化回答。', unconfigured ? 'LLM_NOT_CONFIGURED' : 'NO_STRUCTURED_RESULT'),
+              { mode, grounding, citations, retrieval, clarification });
+          }
+          if (body.responseMode === 'raw') {
+            response.setHeader('X-SpecFlow-Conversation-Id', result.conversationId);
+            response.setHeader('X-SpecFlow-Grounding', grounding);
+            response.setHeader('Access-Control-Expose-Headers', 'X-SpecFlow-Conversation-Id, X-SpecFlow-Grounding');
+            return sendJson(response, 200, result.result);
+          }
+          if (outputSchema) {
+            const { answer, ...structured } = result;
+            return success(response, structured);
+          }
+          return success(response, result);
+        } finally { response.off('close', abort); }
       }
       if (pathname === '/api/v1/ask' && request.method === 'POST') {
         const body = await readJsonBody(request);

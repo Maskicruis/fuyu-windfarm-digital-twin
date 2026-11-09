@@ -1,0 +1,30 @@
+{
+  "question": "把以下施工记录整理为工序清单。里程 YK17+004；作业线：超前预报作业线；节点 209723882444593971201；10-08 09:00 超前地质钻孔开始。",
+  "retrievalMode": "general",
+  "responseMode": "raw",
+  "responseSchema": {
+    "type": "array",
+    "items": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["startMile", "worklineName", "childList"],
+      "properties": {
+        "startMile": { "type": "string" },
+        "worklineName": { "type": "string" },
+        "childList": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["nodeCode", "time", "title"],
+            "properties": {
+              "nodeCode": { "type": "string" },
+              "time": { "type": "string" },
+              "title": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

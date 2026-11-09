@@ -30,6 +30,9 @@ def main():
     data = area/'isolated-data'
     record = data/'component-service.json'
     calls = []
+    structured = [{"startMile": "YK17+004", "worklineName": "超前预报作业线", "childList": [
+        {"nodeCode": "209723882444593971201", "time": "10-08 09:00", "title": "超前地质钻孔开始"}
+    ]}]
 
     class Provider(BaseHTTPRequestHandler):
         def log_message(self, *_):
@@ -38,7 +41,9 @@ def main():
         def do_POST(self):
             calls.append(json.loads(self.rfile.read(int(self.headers['Content-Length']))))
             if not calls[-1].get('stream'):
-                raw=json.dumps({'choices':[{'message':{'content':'第二轮本机验收回答。'}}]}).encode()
+                system = calls[-1]['messages'][0]['content']
+                content = json.dumps({'result':structured,'sourceIds':[]}, ensure_ascii=False) if 'JSON Schema' in system else '第二轮本机验收回答。'
+                raw=json.dumps({'choices':[{'message':{'content':content},'finish_reason':'stop'}]}).encode()
                 self.send_response(200)
                 self.send_header('Content-Type','application/json')
                 self.send_header('Content-Length',str(len(raw)))
@@ -132,6 +137,17 @@ def main():
         assert any('package first turn' in str(m.get('content','')) for m in calls[-1]['messages'])
         saved=request(base,'/api/v1/conversations/'+conversation['id'])
         assert len(saved['turns']) >= 2
+        json_payload=json.loads((ROOT/'specflow-component/integration/ask-json-example.json').read_text('utf8'))
+        json_api='/api/v1/ask/json'
+        req=urllib.request.Request(base+json_api,data=json.dumps(json_payload).encode(),headers={'Content-Type':'application/json'})
+        with urllib.request.urlopen(req,timeout=30) as response:
+            assert response.status==200 and response.headers['Content-Type'].startswith('application/json')
+            assert response.headers['X-SpecFlow-Conversation-Id'] and response.headers['X-SpecFlow-Grounding']=='general'
+            assert json.load(response)==structured
+        json_payload['responseMode']='envelope'
+        assert request(base,json_api,json_payload,'POST')['result']==structured
+        with urllib.request.urlopen(base+'/schemas/ask-json.openapi.json',timeout=10) as response:
+            assert json_api in json.load(response)['paths']
         if args.pdf:
             upload=urllib.request.Request(base+'/api/v1/jobs',data=args.pdf.read_bytes(),headers={'Content-Type':'application/pdf','X-File-Name':'native-validation.pdf'})
             with urllib.request.urlopen(upload,timeout=30) as response:
@@ -183,6 +199,7 @@ def main():
                'context_history':True,'settings_and_history_survive_restart':True,
                'configured_port_survives_restart':True,'provider':'local mock, no real model API call',
                'native_upload_search_page_range_singleton':bool(args.pdf),
+               'structured_json_raw_and_envelope':True,'long_id_preserved':True,'openapi_discoverable':True,
                'data_isolation':True,'persistent_runtime_outside_temp':True,'works_after_temporary_src_and_pdf_modules_removed':True}
         (ROOT/'开发源码/验收产物/SpecFlow-binary-verification.json').write_text(json.dumps(proof,indent=2),'utf-8')
         print(json.dumps(proof),flush=True)

@@ -82,7 +82,7 @@ async function chat(llm, messages, options = {}) {
     let data; try { data = JSON.parse(text); } catch { return { ok: false, error: '响应不是合法 JSON', code: 'LLM_BAD_RESPONSE' }; }
     if(data.error||(!data.choices&&data.code))return httpFailure(res,text,cfg,url);
     const content = data && data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : '';
-    return { ok: true, content: String(content || ''), usage: data.usage || null, model };
+    return { ok: true, content: String(content || ''), usage: data.usage || null, model, finishReason: data.choices?.[0]?.finish_reason || '' };
   } catch (error) {
     return { ok: false, error: options.signal?.aborted ? '已停止生成' : controller.signal.aborted ? '请求超时' : String(error && error.message || error), code: options.signal?.aborted ? 'LLM_ABORTED' : 'LLM_REQUEST_FAILED' };
   } finally { clearTimeout(timer); }

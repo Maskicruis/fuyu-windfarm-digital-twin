@@ -1,8 +1,10 @@
-# SpecFlow 知识组件 1.3.8 · 完整离线数据库与独立更新
+# SpecFlow 知识组件 1.3.9 · 完整离线数据库与独立更新
 
 独立运行的文件存储、PDF 解析、规范检索、连续问答和原文阅读组件。基于 SpecFlow 0.11.1 裁剪，保留其图标、流式客户端、会话与引用契约。
 
-[完整下载](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/component-v1.3.8) · [接入接口](integration/README.md) · [预置规范目录](presets/施工验收规范目录.csv)
+[完整下载](https://github.com/Maskicruis/fuyu-windfarm-digital-twin/releases/tag/component-v1.3.9) · [接入接口](integration/README.md) · [预置规范目录](presets/施工验收规范目录.csv)
+
+[第三方 JSON 接入指南](integration/JSON-API-zh-CN.md)：新增 `POST /api/v1/ask/json`，可直接返回嵌套的业务对象或数组。
 
 ## SiliconFlow 等第三方平台
 
@@ -20,7 +22,7 @@ Windows x64，建议预留至少 12 GB 磁盘空间。完整交付包含以下 6
 
 | 文件 | 用途 |
 | --- | --- |
-| `SpecFlow-Knowledge-Component-1.3.8-x64.exe` | 独立桌面程序 |
+| `SpecFlow-Knowledge-Component-1.3.9-x64.exe` | 独立桌面程序 |
 | `SpecFlow-1.3.2-Parsing-Engine-Windows-x64.zip` | 沿用已验证的 CPython、MinerU、CPU PyTorch 和 9 个本地模型 |
 | `SpecFlow-1.3.2-Default-Database-01.zip` | 基础规范库第 1 包 |
 | `SpecFlow-1.3.2-Default-Database-02.zip` | 基础规范库第 2 包 |

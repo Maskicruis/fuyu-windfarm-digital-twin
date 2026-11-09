@@ -1,0 +1,587 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SpecFlow JSON 问答接口",
+    "version": "v1",
+    "description": "独立知识组件的非流式问答接口。组件绑定本机；异机接入应由宿主网关转发。"
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:{port}",
+      "variables": {
+        "port": {
+          "default": "8790",
+          "description": "以 component-service.json 为准"
+        }
+      }
+    }
+  ],
+  "paths": {
+    "/api/v1/ask/json": {
+      "post": {
+        "operationId": "askJson",
+        "summary": "返回 JSON 问答或业务数据",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "question": {
+                    "type": "string"
+                  },
+                  "images": {
+                    "type": "array",
+                    "maxItems": 8,
+                    "items": {
+                      "type": [
+                        "object",
+                        "string"
+                      ]
+                    }
+                  },
+                  "history": {
+                    "type": "array",
+                    "items": {
+                      "type": "object"
+                    }
+                  },
+                  "conversationId": {
+                    "type": "string"
+                  },
+                  "scenario": {
+                    "type": "string",
+                    "enum": [
+                      "design",
+                      "research",
+                      "general"
+                    ]
+                  },
+                  "retrievalMode": {
+                    "type": "string",
+                    "enum": [
+                      "general",
+                      "knowledge",
+                      "auto"
+                    ],
+                    "default": "auto"
+                  },
+                  "searchScope": {
+                    "type": "string",
+                    "description": "all 覆盖文档和分组限制"
+                  },
+                  "docIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "groupId": {
+                    "type": "string"
+                  },
+                  "topK": {
+                    "type": "integer"
+                  },
+                  "responseMode": {
+                    "type": "string",
+                    "enum": [
+                      "envelope",
+                      "raw"
+                    ],
+                    "default": "envelope"
+                  },
+                  "responseSchema": {
+                    "type": "object",
+                    "description": "JSON Schema 2020-12 常用子集。顶层 type 为 object 或 array。raw 模式必填。"
+                  }
+                }
+              },
+              "examples": {
+                "raw": {
+                  "value": {
+                    "question": "把以下施工记录整理为工序清单。里程 YK17+004；作业线：超前预报作业线；节点 209723882444593971201；10-08 09:00 超前地质钻孔开始。",
+                    "retrievalMode": "general",
+                    "responseMode": "raw",
+                    "responseSchema": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "startMile",
+                          "worklineName",
+                          "childList"
+                        ],
+                        "properties": {
+                          "startMile": {
+                            "type": "string"
+                          },
+                          "worklineName": {
+                            "type": "string"
+                          },
+                          "childList": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "nodeCode",
+                                "time",
+                                "title"
+                              ],
+                              "properties": {
+                                "nodeCode": {
+                                  "type": "string"
+                                },
+                                "time": {
+                                  "type": "string"
+                                },
+                                "title": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "plain": {
+                  "value": {
+                    "question": "混凝土养护有哪些要求？",
+                    "retrievalMode": "knowledge",
+                    "searchScope": "all"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "默认 data.answer / data.result；raw 模式直接返回通过校验的对象或数组。",
+            "headers": {
+              "X-SpecFlow-Conversation-Id": {
+                "description": "raw 模式的续聊 ID",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-SpecFlow-Grounding": {
+                "description": "raw 模式的回答依据类别",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "knowledge",
+                    "general"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "ok",
+                        "apiVersion",
+                        "data"
+                      ],
+                      "properties": {
+                        "ok": {
+                          "const": true
+                        },
+                        "apiVersion": {
+                          "const": "v1"
+                        },
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "conversationId": {
+                              "type": "string"
+                            },
+                            "mode": {
+                              "type": "string"
+                            },
+                            "grounding": {
+                              "type": "string",
+                              "enum": [
+                                "knowledge",
+                                "general",
+                                "none"
+                              ]
+                            },
+                            "answer": {
+                              "type": "string",
+                              "description": "普通问答正文；指定 responseSchema 时为 result"
+                            },
+                            "result": {
+                              "type": [
+                                "object",
+                                "array"
+                              ],
+                              "description": "通过调用方 responseSchema 校验的原生 JSON"
+                            },
+                            "citations": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "docId": {
+                                    "type": "string"
+                                  },
+                                  "page": {
+                                    "type": "integer"
+                                  },
+                                  "itemId": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            },
+                            "retrieval": {
+                              "type": [
+                                "object",
+                                "null"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "object"
+                    },
+                    {
+                      "type": "array"
+                    }
+                  ]
+                },
+                "examples": {
+                  "raw": {
+                    "value": [
+                      {
+                        "startMile": "YK17+004",
+                        "worklineName": "超前预报作业线",
+                        "childList": [
+                          {
+                            "nodeCode": "209723882444593971201",
+                            "time": "10-08 09:00",
+                            "title": "超前地质钻孔开始"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "envelope": {
+                    "value": {
+                      "ok": true,
+                      "apiVersion": "v1",
+                      "data": {
+                        "conversationId": "example-id",
+                        "answer": "示例回答",
+                        "citations": [],
+                        "grounding": "general"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求或结构无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "ok",
+                    "apiVersion",
+                    "error"
+                  ],
+                  "properties": {
+                    "ok": {
+                      "const": false
+                    },
+                    "apiVersion": {
+                      "const": "v1"
+                    },
+                    "error": {
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "请求体过大",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "ok",
+                    "apiVersion",
+                    "error"
+                  ],
+                  "properties": {
+                    "ok": {
+                      "const": false
+                    },
+                    "apiVersion": {
+                      "const": "v1"
+                    },
+                    "error": {
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "请求不是 application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "ok",
+                    "apiVersion",
+                    "error"
+                  ],
+                  "properties": {
+                    "ok": {
+                      "const": false
+                    },
+                    "apiVersion": {
+                      "const": "v1"
+                    },
+                    "error": {
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "信息不足或需澄清",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "ok",
+                    "apiVersion",
+                    "error"
+                  ],
+                  "properties": {
+                    "ok": {
+                      "const": false
+                    },
+                    "apiVersion": {
+                      "const": "v1"
+                    },
+                    "error": {
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "上游模型失败或输出不符合结构",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "ok",
+                    "apiVersion",
+                    "error"
+                  ],
+                  "properties": {
+                    "ok": {
+                      "const": false
+                    },
+                    "apiVersion": {
+                      "const": "v1"
+                    },
+                    "error": {
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "尚未配置模型",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "ok",
+                    "apiVersion",
+                    "error"
+                  ],
+                  "properties": {
+                    "ok": {
+                      "const": false
+                    },
+                    "apiVersion": {
+                      "const": "v1"
+                    },
+                    "error": {
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "其他错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "ok",
+                    "apiVersion",
+                    "error"
+                  ],
+                  "properties": {
+                    "ok": {
+                      "const": false
+                    },
+                    "apiVersion": {
+                      "const": "v1"
+                    },
+                    "error": {
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
