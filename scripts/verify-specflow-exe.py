@@ -155,6 +155,13 @@ def main():
         assert comparison['status'] == 'scheduled' and comparison['cheapest']['meetsDeadline']
         assert comparison['cheapest']['cost']['total'] < comparison['baseline']['cost']['total']
         assert comparison['fastest']['days'] < comparison['cheapest']['days']
+        disruption = json.loads(json.dumps(demo))
+        next(r for r in disruption['resources'] if r['id']=='crane')['windows'].append({'startDay':45,'endDay':60,'capacity':0})
+        rerouted = request(base, planner + 'solve', {'plan': disruption}, 'POST')
+        after = rerouted['cheapest'] or rerouted['fastest']
+        assert after is not None
+        assert any(t['id']==u['id'] and t['endDay']!=u['endDay'] for t in after['tasks'] for u in comparison['cheapest']['tasks'])
+        assert after['finishChain'] and rerouted['asOfDay']==0
         agent = request(base, planner + 'review', {'plan': demo, 'question': '比较工期与费用。'}, 'POST')
         assert agent['answer']
         context = json.loads(calls[-1]['messages'][-1]['content'])['schedule']
@@ -211,7 +218,7 @@ def main():
                'configured_port_survives_restart':True,'provider':'local mock, no real model API call',
                'native_upload_search_page_range_singleton':bool(args.pdf),
                'structured_json_raw_and_envelope':True,'long_id_preserved':True,'openapi_discoverable':True,
-               'engineering_exe_comparison_and_mock_agent':True,
+               'engineering_exe_comparison_and_mock_agent':True,'engineering_disruption_replanning':True,
                'engineering_example':{k:{'days':comparison[k]['days'],'cost':comparison[k]['cost']['total']} for k in ['baseline','cheapest','fastest']},
                'data_isolation':True,'persistent_runtime_outside_temp':True,'works_after_temporary_src_and_pdf_modules_removed':True}
         (ROOT/'开发源码/验收产物/SpecFlow-binary-verification.json').write_text(json.dumps(proof,indent=2),'utf-8')

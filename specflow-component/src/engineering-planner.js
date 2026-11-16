@@ -42,6 +42,7 @@ function prepare(input) {
     throw invalid('计划起算日期须为有效的 YYYY-MM-DD。');
   const overhead = amount(input.overheadPerDay ?? 0, '现场管理费');
   const deadline = integer(input.deadlineDays ?? 0, '目标工期', 0, HORIZON);
+  const asOf = integer(input.asOfDay ?? 0, '进度截点', 0, HORIZON - 1);
   const resources = list(input.resources, '资源', 24, 1).map(row => {
     object(row, '资源');
     const name = label(row.name, '资源名称');
@@ -69,7 +70,19 @@ function prepare(input) {
     });
     const duration = integer(row.duration, name + '工期', 1, 365);
     const direct = amount(row.directCost ?? 0, name + '固定成本');
-    return { id: id(row.id, '工序编号'), name, group: row.group, face: label(row.face, '工作面'), demand, duration, direct,
+    let actualStart = null, actualEnd = null, remaining = duration;
+    if (row.progress != null) {
+      const progress = object(row.progress, name + '进度');
+      actualStart = integer(progress.startDay, name + '实际开工日', 0, asOf);
+      if (progress.endDay != null) {
+        actualEnd = integer(progress.endDay, name + '实际完工日', actualStart + 1, asOf);
+        remaining = 0;
+      } else {
+        remaining = integer(progress.remainingDays, name + '预计剩余工期', 1, 365);
+      }
+    }
+    return { id: id(row.id, '工序编号'), name, group: row.group, face: label(row.face, '工作面'), demand, duration: remaining, direct,
+      actualStart, actualEnd, billedDays: remaining + (actualStart == null ? 0 : (actualEnd ?? asOf) - actualStart),
       release: integer(row.releaseDay ?? 0, name + '最早开工日', 0, HORIZON - 1),
       after: [...new Set(list(row.after ?? [], name + '前置工序', LIMIT).map(value => id(value, '前置工序编号')))],
       next: [] };
@@ -92,7 +105,10 @@ function prepare(input) {
   let lowerDays = 0;
   for (const i of ready) {
     const task = tasks[i];
-    task.earliestFinish = Math.max(task.release, ...task.after.map(p => tasks[p].earliestFinish)) + task.duration;
+    if (task.actualStart != null && task.after.some(p => tasks[p].actualEnd == null || tasks[p].actualEnd > task.actualStart))
+      throw invalid(task.id + ' 的实际开工早于前置工序实际完工，请核对进度记录。');
+    task.earliestFinish = task.actualEnd ??
+      (Math.max(asOf, task.release, ...task.after.map(p => tasks[p].earliestFinish)) + task.duration);
     lowerDays = Math.max(lowerDays, task.earliestFinish);
   }
   for (const i of ready.reverse()) {
@@ -100,33 +116,50 @@ function prepare(input) {
     task.tail = task.duration + Math.max(0, ...task.next.map(n => tasks[n].tail));
   }
   const directCost = tasks.reduce((sum, t) => sum + t.direct, 0);
-  const usageCost = tasks.reduce((sum, t) => sum + t.demand.reduce((c, [r, n]) => c + n * t.duration * resources[r].daily, 0), 0);
+  const usageCost = tasks.reduce((sum, t) => sum + t.demand.reduce((c, [r, n]) => c + n * t.billedDays * resources[r].daily, 0), 0);
   if (directCost + usageCost >= Number.MAX_SAFE_INTEGER / 2) throw invalid('本方案金额超出可靠计算范围。');
-  return { title, startDate: startDate || '', deadline, overhead, resources, tasks, directCost, usageCost, lowerDays, demo: input.demo === true };
+  return { title, startDate: startDate || '', deadline, asOf, overhead, resources, tasks, directCost, usageCost, lowerDays, demo: input.demo === true };
 }
 
 function schedule(plan, priorities) {
   const { tasks, resources } = plan;
   const pending = tasks.map(task => task.after.length);
   const ready = tasks.flatMap((_, i) => pending[i] ? [] : [i]);
-  const loads = resources.map(() => new Uint16Array(HORIZON));
+  const loads = resources.map(() => new Uint32Array(HORIZON));
   const faces = new Map(plan.tasks.map(t => [t.group + '|' + t.face, null]));
-  const starts = [], ends = [];
+  const starts = [], ends = [], waits = [], blockers = [];
   const parallel = new Uint16Array(HORIZON);
   let days = 0;
+  for (const task of tasks) {
+    if (task.actualStart == null) continue;
+    for (let d = task.actualStart; d < (task.actualEnd ?? plan.asOf); d++) {
+      parallel[d]++;
+      for (const [r, quantity] of task.demand) loads[r][d] += quantity;
+    }
+  }
   while (ready.length) {
     let best = 0;
     for (let j = 1; j < ready.length; j++) if (priorities[ready[j]] > priorities[ready[best]]) best = j;
     const [i] = ready.splice(best, 1);
     const task = tasks[i];
+    if (task.actualEnd != null) {
+      starts[i] = null;
+      ends[i] = task.actualEnd;
+      days = Math.max(days, task.actualEnd);
+      for (const next of task.next) if (--pending[next] === 0) ready.push(next);
+      continue;
+    }
     const faceKey = task.group + '|' + task.face;
     if (!faces.get(faceKey)) faces.set(faceKey, new Uint8Array(HORIZON));
     const face = faces.get(faceKey);
-    let start = Math.max(task.release, ...task.after.map(p => ends[p]));
+    const earliest = Math.max(plan.asOf, task.release, ...task.after.map(p => ends[p]));
+    let start = earliest;
     while (start + task.duration <= HORIZON) {
       let conflict = -1;
       for (let day = start; day < start + task.duration; day++) {
-        if (face[day] || task.demand.some(([r, quantity]) => loads[r][day] + quantity > resources[r].availability[day])) {
+        const shortage = task.demand.find(([r, quantity]) => loads[r][day] + quantity > resources[r].availability[day]);
+        if (face[day] || shortage) {
+          blockers[i] = face[day] ? '工作面占用' : resources[shortage[0]].name + '容量不足';
           conflict = day;
           break;
         }
@@ -137,6 +170,7 @@ function schedule(plan, priorities) {
     if (start + task.duration > HORIZON) return null;
     const end = start + task.duration;
     starts[i] = start;
+    waits[i] = start - earliest;
     ends[i] = end;
     face.fill(1, start, end);
     for (let day = start; day < end; day++) parallel[day]++;
@@ -153,9 +187,10 @@ function schedule(plan, priorities) {
       last = day + 1;
       unitDays += used;
       peak = Math.max(peak, used);
-      peakLoadPercent = Math.max(peakLoadPercent, Math.round(100 * used / available));
+      if (available) peakLoadPercent = Math.max(peakLoadPercent, Math.round(100 * used / available));
     }
-    if (first >= 0) for (let day = first; day < last; day++) availableDays += Math.min(peak, resource.availability[day]);
+    if (first >= 0) for (let day = first; day < last; day++)
+      availableDays += Math.max(loads[r][day], Math.min(peak, resource.availability[day]));
     const idleUnitDays = availableDays - unitDays;
     return { id: resource.id, name: resource.name, capacity: resource.capacity, peak, peakLoadPercent, unitDays,
       idleUnitDays, firstDay: first < 0 ? null : first, lastDay: first < 0 ? null : last,
@@ -165,33 +200,43 @@ function schedule(plan, priorities) {
   const overhead = days * plan.overhead;
   const total = plan.directCost + plan.usageCost + standby + overhead;
   if (!Number.isSafeInteger(total)) throw invalid('本方案排程总金额超出可靠计算范围。');
-  return { starts, ends, days, total, standby, overhead, resourceStats, peakParallel: Math.max(...parallel) };
+  return { starts, ends, waits, blockers, days, total, standby, overhead, resourceStats, peakParallel: Math.max(...parallel) };
 }
 
 function describe(plan, item) {
   if (!item) return null;
+  const chain = [];
+  let cursor = item.ends.indexOf(item.days);
+  while (cursor >= 0) {
+    const task = plan.tasks[cursor];
+    chain.unshift(task.id);
+    cursor = task.after.reduce((latest, p) => latest < 0 || item.ends[p] > item.ends[latest] ? p : latest, -1);
+  }
   return { days: item.days, peakParallel: item.peakParallel, meetsDeadline: !plan.deadline || item.days <= plan.deadline,
+    finishChain: chain,
     cost: { total: item.total / 100, direct: plan.directCost / 100, usage: plan.usageCost / 100,
       overhead: item.overhead / 100, standby: item.standby / 100 },
     resources: item.resourceStats.map(({ standbyCents, ...r }) => ({ ...r, standbyCost: standbyCents / 100 })),
-    tasks: plan.tasks.map((t, i) => ({ id: t.id, group: t.group, face: t.face, name: t.name, startDay: item.starts[i],
-      endDay: item.ends[i], after: t.after.map(p => plan.tasks[p].id),
+    tasks: plan.tasks.map((t, i) => ({ id: t.id, group: t.group, face: t.face, name: t.name, startDay: t.actualStart ?? item.starts[i],
+      endDay: item.ends[i], actualStartDay: t.actualStart, actualEndDay: t.actualEnd, plannedStartDay: item.starts[i],
+      progress: t.actualEnd != null ? 'done' : t.actualStart != null ? 'active' : 'pending',
+      waitDays: item.waits[i] || 0, waitReason: item.blockers[i] || '', after: t.after.map(p => plan.tasks[p].id),
       resources: Object.fromEntries(t.demand.map(([r, n]) => [plan.resources[r].id, n])) }))
       .sort((a, b) => a.startDay - b.startDay || a.endDay - b.endDay) };
 }
 
 function optimize(input) {
   const plan = prepare(input);
-  const blocked = plan.tasks.flatMap(t => t.demand.filter(([r, n]) => n > plan.resources[r].capacity)
+  const blocked = plan.tasks.filter(t => t.duration).flatMap(t => t.demand.filter(([r, n]) => n > plan.resources[r].capacity)
     .map(([r, n]) => t.id + ' 需要 ' + n + ' × ' + plan.resources[r].name + '，可用上限为 ' + plan.resources[r].capacity));
-  const meta = { name: plan.title, startDate: plan.startDate, demo: plan.demo, deadlineDays: plan.deadline, lowerBoundDays: plan.lowerDays };
+  const meta = { name: plan.title, startDate: plan.startDate, demo: plan.demo, asOfDay: plan.asOf, deadlineDays: plan.deadline, lowerBoundDays: plan.lowerDays };
   if (blocked.length) return { ...meta, status: 'capacity_conflict', blocked, attempts: 0, baseline: null, cheapest: null, fastest: null };
   let seed = 713057;
   const random = () => {
     seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
     return seed / 4294967296;
   };
-  const baseline = schedule(plan, plan.tasks.map((_, i) => -i));
+  const baseline = schedule(plan, plan.tasks.map((task, i) => task.actualStart != null ? 100000 - i : -i));
   let cheapest = null, fastest = null, attempts = 1;
   function consider(item) {
     if (!item) return;
@@ -202,6 +247,7 @@ function optimize(input) {
   consider(baseline);
   for (let trial = 0; trial < 79; trial++) {
     const weights = plan.tasks.map(t => {
+      if (t.actualStart != null) return 100000;
       if (trial === 0) return t.tail;
       if (trial === 1) return -t.duration;
       if (trial === 2) return t.next.length;

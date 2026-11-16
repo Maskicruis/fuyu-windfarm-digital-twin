@@ -61,6 +61,33 @@ test('no candidate is advertised as meeting an impossible date or exceeding capa
   assert.match(result.blocked[0], /RD-1/);
 });
 
+test('a resource outage reroutes only future work and preserves already reported dates', () => {
+  const input = {
+    name: '动态排程测试', asOfDay: 5, deadlineDays: 20, overheadPerDay: 10,
+    resources: [{ id: 'crane', name: '吊装资源', capacity: 1, dailyCost: 5 }],
+    tasks: [
+      { id: 'base', name: '基础', group: '风机工程', face: 'F01', duration: 5, progress: { startDay: 0, endDay: 3 } },
+      { id: 'lift', name: '吊装', group: '风机工程', face: 'F01', duration: 4,
+        progress: { startDay: 3, remainingDays: 2 }, demand: { crane: 1 }, after: ['base'] },
+      { id: 'check', name: '验收', group: '风机工程', face: 'F01', duration: 1, after: ['lift'] }
+    ]
+  };
+  const before = optimize(input).cheapest;
+  input.resources[0].windows = [{ startDay: 5, endDay: 8, capacity: 0 }];
+  const after = optimize(input).cheapest;
+  const tasks = Object.fromEntries(after.tasks.map(task => [task.id, task]));
+  assert.equal(before.days, 8);
+  assert.equal(after.days, 11);
+  assert.deepEqual(after.finishChain, ['base','lift','check']);
+  assert.equal(tasks.base.actualEndDay, 3);
+  assert.equal(tasks.lift.actualStartDay, 3);
+  assert.equal(tasks.lift.plannedStartDay, 8);
+  assert.equal(tasks.lift.waitDays, 3);
+  assert.equal(tasks.check.plannedStartDay, 10);
+  assert.equal(after.cost.usage, before.cost.usage);
+  assert.equal(after.cost.total - before.cost.total, 30);
+});
+
 test('engineering HTTP endpoints validate invalid plans and provide the actual computed snapshot to the agent', async t => {
   const stub = createStubLlm({ answer: '识别到吊装资源有闲置，请在修改数量后复算。' });
   const modelPort = await stub.listen();

@@ -15,7 +15,7 @@
     "Default navigation has only assistant/database; settings has parser/model only.",
     "Unused feature selectors removed; original chat/image/stream modules and original PDF reader retained.",
     "1.1.0 adapts answering-mode UI, native/OCR task states, bulk folder import, timings and bounded PDF Range reader; upstream inline hashes are historical, not a byte-identical claim.",
-    "1.4.0 adds the engineering workface planning page below the document database."
+    "1.4.0 adds dynamic engineering process network navigation and parallel workface replanning below the document database."
   ],
   "upstream_inline_function_sha256": {
     "citationAttrs": "0d82621a0f75dfa84f9d61f9a8d9426225705d8a9de51e16f9d27e2190143df0",
@@ -30,5 +30,5 @@
     "openCitationFromLocation": "dd09ae5637f098cc4706b2355781e2934658204267a5ed6d2145dd7c72ed1a53"
   },
   "upstream_pdf_reader_module_sha256": "bb0d06f22d02cc1c6011675c58fc4c8a2524661bc10de529cae9697fb2f6c0c2",
-  "current_ui_sha256": "9443a3ece6a4594903d9325027d80c0f0518d81118c496e7f5e4f09bccff450b"
+  "current_ui_sha256": "522ef89193df9032dee54d5705c85fd4d01d73559845a0032f747e1ac33480bc"
 }

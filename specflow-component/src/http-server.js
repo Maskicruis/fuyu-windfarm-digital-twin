@@ -261,7 +261,8 @@ function createHttpServer({ service = new KnowledgeBaseService() } = {}) {
         try {
           const result = pathname.endsWith('/solve')
             ? await solveEngineeringPlan(body.plan, controller.signal)
-            : await reviewEngineeringPlan(body.plan, body.question, service.settings.llm, controller.signal);
+            : await reviewEngineeringPlan(body.plan, body.question, service.settings.llm, controller.signal,
+              { priorPlan: body.priorPlan, selected: body.selected });
           if (!controller.signal.aborted) return success(response, result);
         } catch (error) {
           if (!controller.signal.aborted) throw error;

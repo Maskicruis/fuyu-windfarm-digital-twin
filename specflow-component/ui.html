@@ -583,6 +583,7 @@ canvas{box-shadow:var(--shadow)}
           <div class="eng-parameters">
             <label>方案名称<input type="text" id="engProject" maxlength="80"></label>
             <label>起算日期<input type="date" id="engStart"></label>
+            <label>当前进度日（D0 起算）<input type="number" id="engAsOf" min="0" max="1799"></label>
             <label>目标工期（天）<input type="number" id="engDeadline" min="0" max="1800" placeholder="0 为不限"></label>
             <label>现场管理费（元 / 天）<input type="number" id="engOverhead" min="0" step="0.01"></label>
           </div>
@@ -594,6 +595,18 @@ canvas{box-shadow:var(--shadow)}
           </div>
           <section id="engResults" data-eng-panel="results">
             <div class="eng-cards" id="engCards"></div>
+            <div class="eng-panel eng-navigation" id="engNetworkPanel" hidden>
+              <div class="eng-panel-head">
+                <div><h2>工序进度网络图</h2><p id="engRouteSummary" class="muted"></p></div>
+                <div class="eng-actions">
+                  <label class="eng-inline">查看范围<select id="engNetworkMode" aria-label="网络范围"><option value="related">选中工序及上下游</option><option value="all">全部工序</option></select></label>
+                  <button class="btn" type="button" id="engOutage">登记资源停用</button>
+                </div>
+              </div>
+              <p class="eng-network-legend"><span>蓝线 · 完工依赖链</span><span>绿色 · 已完工</span><span>黄色 · 施工中</span><span>紫色 · 本次改变</span></p>
+              <div id="engNetwork" tabindex="0" aria-label="工序依赖网络"></div>
+              <div class="eng-node-detail" id="engNodeDetail"></div>
+            </div>
             <div class="eng-panel" id="engSchedule" hidden>
               <div class="eng-panel-head"><div><h2>工作面甘特图</h2><p id="engTimeLabel" class="muted"></p></div><div class="eng-actions"><select id="engGroup" aria-label="筛选专业"></select><input id="engSearch" type="search" aria-label="筛选工作面" placeholder="搜机位、编号或工序"><button class="btn" type="button" id="engExport">导出排程 JSON</button></div></div>
               <div id="engTimeline" class="eng-tablewrap" tabindex="0" aria-label="排程时间表"></div>
@@ -609,6 +622,13 @@ canvas{box-shadow:var(--shadow)}
           <section class="eng-panel" data-eng-panel="tasks" hidden><div class="eng-panel-head"><div><h2>工序与工作面</h2><p class="muted">前置工序完成后才能开工。同专业同名工作面同一时间只安排一道工序。</p></div><button class="btn" type="button" id="engAddTask">新增工序</button></div><div id="engTaskTable" class="eng-tablewrap" tabindex="0" aria-label="工序列表"></div></section>
           <section class="eng-panel" data-eng-panel="resources" hidden><div class="eng-panel-head"><div><h2>共享资源</h2><p class="muted">设置班组、机械及设备数量、费率和产能窗口。</p></div><button class="btn" type="button" id="engAddResource">新增资源</button></div><div id="engResourceTable" class="eng-tablewrap"></div></section>
         </div>
+        <dialog class="eng-dialog" id="engOutageDialog" aria-labelledby="engOutageTitle">
+          <form id="engOutageForm"><h2 id="engOutageTitle">登记资源停用</h2><div class="eng-edit-fields">
+            <label class="eng-full">停用资源<select name="resource" required></select></label>
+            <label>停用起点 D<input name="start" type="number" min="0" max="1799" required></label>
+            <label>恢复起点 D<input name="end" type="number" min="1" max="1800" required></label>
+          </div><p id="engOutageStatus" class="eng-error" role="status"></p><div class="eng-actions"><span class="eng-spacer"></span><button class="btn" id="engOutageCancel" type="button">取消</button><button class="btn btn-primary" type="submit">应用并重排</button></div></form>
+        </dialog>
         <dialog class="eng-dialog" id="engEditor" aria-labelledby="engEditorTitle">
           <form id="engEditorForm"><h2 id="engEditorTitle"></h2><div class="eng-edit-fields" id="engFields"></div><p class="eng-error" id="engEditStatus" role="status"></p><div class="eng-actions"><button class="btn" type="button" id="engDelete">删除</button><span class="eng-spacer"></span><button class="btn" type="button" id="engCancel">取消</button><button class="btn btn-primary" type="submit">保存</button></div></form>
         </dialog>
