@@ -1,0 +1,59 @@
+.eng-page { flex-direction: column; }
+.eng-page [hidden] { display: none !important; }
+.eng-scroll { flex: 1; min-height: 0; overflow: auto; padding: 24px clamp(15px, 2.4vw, 32px) 40px; }
+.eng-scroll > * { max-width: 1500px; margin-inline: auto; }
+.eng-controls, .eng-panel-head, .eng-actions, .eng-tabs { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.eng-controls, .eng-panel-head { justify-content: space-between; }
+.eng-controls h1 { margin: 5px 0; font-size: clamp(19px, 2.1vw, 30px); letter-spacing: -.025em; }
+.eng-kicker { color: var(--accent, #56bce8); font-size: 12px; font-weight: 650; }
+.eng-controls p, .eng-panel-head p { font-size: 12px; margin: 3px 0; }
+.eng-parameters { display: grid; grid-template-columns: 1.55fr 1fr 1fr 1fr; gap: 12px; margin-top: 18px; }
+.eng-page label, .eng-dialog label { display: grid; gap: 5px; font-size: 12px; }
+.eng-page input:not([type=file]), .eng-page select, .eng-page textarea { min-width: 0; }
+.eng-page input:not([type=file]), .eng-page select, .eng-page textarea {
+  background: var(--panel, #111c2b); color: var(--text); border: 1px solid var(--line, #283a50); border-radius: 7px; padding: 8px 10px;
+}
+.eng-status { margin-top: 13px; min-height: 18px; color: var(--muted, #8aa1bc); font-size: 12px; }
+.eng-error { color: #ed8c7a !important; }
+[data-theme=light] .eng-error { color: #a12919 !important; }
+.eng-tabs { margin-bottom: 13px; padding-bottom: 9px; border-bottom: 1px solid var(--line, #283a50); }
+.eng-tabs .active { border-color: #3489c3; color: var(--accent, #56bce8); }
+.eng-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.eng-card, .eng-panel { background: var(--panel, #111c2b); border: 1px solid var(--line, #283a50); border-radius: 10px; color: var(--text); }
+.eng-card { display: flex; flex-direction: column; gap: 6px; min-height: 105px; padding: 13px 14px; text-align: left; }
+.eng-card strong { font-size: clamp(16px, 1.9vw, 26px); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.eng-card.active { border-color: #36a8e8; box-shadow: inset 0 2px #36a8e8; }
+.eng-card-detail, .eng-card-delta { color: var(--muted, #8aa1bc); font-size: 12px; }
+.eng-card-delta { color: var(--accent, #56bce8); }
+.eng-panel { overflow: hidden; margin-top: 12px; }
+.eng-panel-head { padding: 12px 14px; border-bottom: 1px solid var(--line, #283a50); }
+.eng-panel-head h2 { margin: 0; font-size: 14px; }
+.eng-tablewrap { overflow: auto; max-height: 440px; }
+.eng-tablewrap table { width: 100%; min-width: 570px; border-collapse: collapse; text-align: left; font-size: 12px; }
+.eng-tablewrap :is(td,th) { padding: 8px 13px; border-bottom: 1px solid var(--line, #283a50); vertical-align: middle; }
+.eng-tablewrap th { position: sticky; top: 0; background: var(--panel, #111c2b); color: var(--muted, #8aa1bc); z-index: 1; }
+#engTimeline td:nth-child(2) { white-space: nowrap; }
+#engTimeline td:last-child { width: 46%; min-width: 220px; }
+.eng-axis { display: flex; justify-content: space-between; font-size: 11px; }
+.eng-timeline-name { display: grid; gap: 3px; }
+.eng-track { height: 10px; border-radius: 3px; position: relative; background: color-mix(in srgb, var(--muted, #8aa1bc) 14%, transparent); }
+.eng-bar { position: absolute; height: 100%; border-radius: 3px; background: #2c9be5; }
+.eng-bar[data-group="1"] { background: #45bcb2; }
+.eng-bar[data-group="2"] { background: #be9248; }
+.eng-bar[data-group="3"] { background: #9275da; }
+.eng-bar[data-group="4"] { background: #be6f96; }
+.eng-mini { font-size: 12px; padding: 5px 9px; }
+.eng-agent form { display: grid; gap: 8px; padding: 12px 14px; }
+.eng-agent pre { margin: 0; padding: 14px; border-top: 1px solid var(--line, #283a50); white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; line-height: 1.7; }
+.eng-dialog { width: min(610px, 90vw); border: 1px solid var(--line, #283a50); border-radius: 12px; background: var(--panel, #111c2b); color: var(--text); padding: 20px; }
+.eng-dialog::backdrop { background: #030914aa; }
+.eng-dialog h2 { margin-top: 0; }
+.eng-edit-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.eng-full { grid-column: 1 / -1; }
+.eng-spacer { flex: 1; }
+@media (max-width: 1000px) {
+  .eng-parameters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 660px) {
+  .eng-cards { grid-template-columns: 1fr; }
+}

@@ -148,6 +148,17 @@ def main():
         assert request(base,json_api,json_payload,'POST')['result']==structured
         with urllib.request.urlopen(base+'/schemas/ask-json.openapi.json',timeout=10) as response:
             assert json_api in json.load(response)['paths']
+        planner = '/api/v1/engineering/'
+        demo = request(base, planner + 'demo')
+        assert demo['demo'] and len(demo['tasks']) == 130
+        comparison = request(base, planner + 'solve', {'plan': demo}, 'POST')
+        assert comparison['status'] == 'scheduled' and comparison['cheapest']['meetsDeadline']
+        assert comparison['cheapest']['cost']['total'] < comparison['baseline']['cost']['total']
+        assert comparison['fastest']['days'] < comparison['cheapest']['days']
+        agent = request(base, planner + 'review', {'plan': demo, 'question': '比较工期与费用。'}, 'POST')
+        assert agent['answer']
+        context = json.loads(calls[-1]['messages'][-1]['content'])['schedule']
+        assert context['cheapest']['cost'] == comparison['cheapest']['cost']
         if args.pdf:
             upload=urllib.request.Request(base+'/api/v1/jobs',data=args.pdf.read_bytes(),headers={'Content-Type':'application/pdf','X-File-Name':'native-validation.pdf'})
             with urllib.request.urlopen(upload,timeout=30) as response:
@@ -200,6 +211,8 @@ def main():
                'configured_port_survives_restart':True,'provider':'local mock, no real model API call',
                'native_upload_search_page_range_singleton':bool(args.pdf),
                'structured_json_raw_and_envelope':True,'long_id_preserved':True,'openapi_discoverable':True,
+               'engineering_exe_comparison_and_mock_agent':True,
+               'engineering_example':{k:{'days':comparison[k]['days'],'cost':comparison[k]['cost']['total']} for k in ['baseline','cheapest','fastest']},
                'data_isolation':True,'persistent_runtime_outside_temp':True,'works_after_temporary_src_and_pdf_modules_removed':True}
         (ROOT/'开发源码/验收产物/SpecFlow-binary-verification.json').write_text(json.dumps(proof,indent=2),'utf-8')
         print(json.dumps(proof),flush=True)

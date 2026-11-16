@@ -7,6 +7,9 @@ const { DATA, ROOT } = require('./config');
 const { KnowledgeBaseService } = require('./service');
 const { toLegacyItems } = require('./transform');
 const { IMAGE_LIMITS } = require('./chat-images');
+const { solve: solveEngineeringPlan } = require('./engineering-planner');
+const { demoPlan } = require('./engineering-demo');
+const { review: reviewEngineeringPlan } = require('./engineering-agent');
 const { compileOutputSchema } = require('./structured-answer');
 
 let sea = null;
@@ -220,7 +223,7 @@ function createHttpServer({ service = new KnowledgeBaseService() } = {}) {
       }
       if (pathname.startsWith('/app/')) {
         const filename = path.basename(pathname);
-        if (!['brand-theme.css', 'chat-images.js', 'chat-images.css', 'chat-view.js', 'chat-view.css', 'stream-client.js'].includes(filename)) throw new HttpError(404, '界面模块不存在', 'NOT_FOUND');
+        if (!['brand-theme.css', 'chat-images.js', 'chat-images.css', 'chat-view.js', 'chat-view.css', 'stream-client.js', 'engineering.js', 'engineering.css'].includes(filename)) throw new HttpError(404, '界面模块不存在', 'NOT_FOUND');
         return sendStaticAsset(request, response, 'ui-modules/' + filename, path.join(ROOT, 'ui-modules', filename), MIMES[path.extname(filename).toLowerCase()] || 'application/octet-stream');
       }
       if (pathname === '/open/citation' && request.method === 'GET') {
@@ -245,6 +248,25 @@ function createHttpServer({ service = new KnowledgeBaseService() } = {}) {
         if (payload.bbox) fallback.set('bbox', payload.bbox.join(','));
         if (payload.bboxNormalized) fallback.set('nbbox', payload.bboxNormalized.join(','));
         return sendHtml(response, 200, '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>正在打开 SpecFlow</title><style>body{margin:0;background:#0d0f12;color:#e8ebf2;font:14px system-ui;display:grid;place-items:center;min-height:100vh}.card{max-width:520px;padding:28px;border:1px solid #303746;border-radius:16px;background:#171a20;text-align:center}a{color:#86aaff}</style><div class="card"><h2>已发送到 SpecFlow</h2><p>原文定位已发送到正在运行的 SpecFlow Engineering Studio。</p><p>如果桌面窗口没有响应，请确认 SpecFlow 正在运行，或<a href="/?' + fallback.toString() + '">在浏览器中打开</a>。</p></div><script>setTimeout(function(){window.close()},900)</script>');
+      }
+
+      if (pathname === '/api/v1/engineering/demo' && request.method === 'GET') return success(response, demoPlan());
+      if (['/api/v1/engineering/solve', '/api/v1/engineering/review'].includes(pathname) && request.method === 'POST') {
+        const body = await readJsonBody(request);
+        if (!body || typeof body !== 'object' || Array.isArray(body))
+          throw new HttpError(400, '请求体须为 JSON 对象。', 'INVALID_PLAN');
+        const controller = new AbortController();
+        const abort = () => controller.abort();
+        response.once('close', abort);
+        try {
+          const result = pathname.endsWith('/solve')
+            ? await solveEngineeringPlan(body.plan, controller.signal)
+            : await reviewEngineeringPlan(body.plan, body.question, service.settings.llm, controller.signal);
+          if (!controller.signal.aborted) return success(response, result);
+        } catch (error) {
+          if (!controller.signal.aborted) throw error;
+        } finally { response.off('close', abort); }
+        return;
       }
 
       // Stable, versioned interface for agents and external schedulers.

@@ -653,7 +653,7 @@ class KnowledgeBaseService {
         'image-paste', 'multimodal-chat', 'image-aware-retrieval',
         'stream-forwarding', 'stream-cancellation',
         'document-groups', 'group-scoped-retrieval', 'general-llm-fallback', 'item-export',
-        'semantic-query-expansion', 'ambiguity-clarification', 'structured-json-answer'
+        'semantic-query-expansion', 'ambiguity-clarification', 'structured-json-answer', 'parallel-workface-planning'
       ],
       retrieval: { default: 'sqlite-fts5', hybrid: embeddings.isConfigured(this.settings.llm) ? 'available' : 'requires embeddingModel' },
       images: { ...IMAGE_LIMITS, formats: ['image/png', 'image/jpeg', 'image/gif', 'image/webp'], visionModel: visionModel(this.settings.llm) },
@@ -671,6 +671,9 @@ class KnowledgeBaseService {
         { method: 'GET', path: '/api/v1/search?q=&topK=&doc=&group=', desc: '语义查询规划 + 本地检索（可按文档或分组限定）' },
         { method: 'POST', path: '/api/v1/ask', desc: '问答（结构化引用）' },
         { method: 'POST', path: '/api/v1/ask/json', desc: 'JSON 问答；可指定输出结构、返回原生对象或数组' },
+        { method: 'GET', path: '/api/v1/engineering/demo', desc: '并行工作面示例输入' },
+        { method: 'POST', path: '/api/v1/engineering/solve', desc: '根据工序、资源和费用计算排程候选' },
+        { method: 'POST', path: '/api/v1/engineering/review', desc: '用模型解读排程结果' },
         { method: 'POST', path: '/api/v1/ask/stream', desc: '问答（SSE 流式）' },
         { method: 'POST', path: '/api/v1/chat/images', desc: '上传聊天图片（原始二进制，X-File-Name）' },
         { method: 'GET/DELETE', path: '/api/v1/chat/images/:id', desc: '查看图片或删除尚未使用的附件' },
