@@ -102,6 +102,7 @@ test('structured JSON errors do not save turns, guess facts or return a partial 
   }
   stub.state.answer = fixture(null);
   await assert.rejects(client.askJson(query), { status: 422, code: 'NO_STRUCTURED_RESULT' });
+  await service.rag.refreshing;
   const before = stub.state.calls;
   await assert.rejects(client.askJson({ ...query, retrievalMode: 'knowledge' }), { status: 422, code: 'NO_STRUCTURED_RESULT' });
   assert.equal(stub.state.calls, before);
